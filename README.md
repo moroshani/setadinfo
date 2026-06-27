@@ -25,16 +25,16 @@ SetadInfo یک سایت تک‌صفحه‌ای شلوغ نیست؛ یک داشب
 - `مقصدها`: مدیریت مقصدهای Rubika برای ارسال اعلان.
 - `کاربران`: نقش‌های `admin`، `operator` و `viewer`.
 
-## آماده برای بازطراحی با Google AI Studio
+## وضعیت محصول و بازطراحی
 
-این مخزن عمومی نسخه canonical پروژه است. برای سپردن بازطراحی کامل فرانت‌اند به
-Google AI Studio، فایل زیر را اول به مدل بدهید:
+این مخزن عمومی نسخه canonical پروژه است. فرانت‌اند فعلی کار می‌کند و به سایت
+production وصل شده، اما مسیر بعدی محصول یک بازطراحی کامل تجربه کاربری و رابط
+کاربری است. brief اصلی بازطراحی اینجاست:
 
-- [AI_STUDIO_FRONTEND_BRIEF.md](AI_STUDIO_FRONTEND_BRIEF.md)
+- [FRONTEND_REDESIGN_BRIEF.md](FRONTEND_REDESIGN_BRIEF.md)
 
-هدف بازطراحی، تغییر رنگ و ظاهر سطحی نیست؛ باید تجربه کاربری ورک‌بنچ از نو برای
-کاربر عملیاتی ساخته شود. بک‌اند و API فعلی قابل استفاده هستند و فرانت‌اند باید
-همچنان فارسی، RTL، چندمسیره و مناسب کار روزمره باشد.
+این brief می‌تواند توسط توسعه‌دهنده، طراح، Google AI Studio یا هر ابزار دیگری
+استفاده شود؛ هدف، ساخت یک ورک‌بنچ بهتر است، نه وابستگی به ابزار خاص.
 
 ## جریان کار اصلی
 
@@ -178,7 +178,8 @@ WORKBENCH_URL=http://127.0.0.1:5181 node scripts/capture-public-screenshots.mjs
 
 ## مستندات
 
-- [راهنمای بازطراحی برای AI Studio](AI_STUDIO_FRONTEND_BRIEF.md)
+- [راهنمای بازطراحی فرانت‌اند](FRONTEND_REDESIGN_BRIEF.md)
+- [Roadmap](ROADMAP.md)
 - [معماری](docs/architecture.md)
 - [استقرار](docs/deployment.md)
 - [پایداری جستجوی زنده](docs/live-search-reliability.md)

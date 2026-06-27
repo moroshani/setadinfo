@@ -1,8 +1,8 @@
-# AI Studio Frontend Redesign Brief
+# Frontend Redesign Brief
 
-This repository is ready to hand to Google AI Studio for a full frontend UX/UI
-redesign. The current workbench is functional, but the desired next step is a
-complete product-design pass, not a cosmetic theme change.
+This brief describes the intended next UX/UI direction for SetadInfo. It can be
+used by a human designer, a frontend engineer, Google AI Studio, or any other
+design/code agent. The goal is the product, not the tool.
 
 ## Product Goal
 
@@ -18,22 +18,22 @@ and auctions. Users should be able to:
 - diagnose scheduled monitor runs;
 - manage users and roles.
 
-The user does not want a landing page or a one-page demo. They want a real
-dashboard/workbench optimized for repeated operational use.
+This should feel like an operational dashboard/workbench for repeated daily
+use, not a landing page, marketing site, or one-page demo.
 
 ## Redesign Scope
 
-You may redesign the frontend UI and UX from scratch.
+The frontend UX and UI can be redesigned from scratch.
 
 Keep:
 
-- `frontend-workbench` as the frontend package unless there is a strong reason
-  to migrate;
+- `frontend-workbench` as the frontend package unless a migration is clearly
+  worth it;
 - React + TypeScript + Vite;
 - RTL/Persian-first product behavior;
 - the FastAPI backend API contract under `/api`;
-- authentication flow based on server session cookies;
-- the core routes listed below.
+- authentication based on server session cookies;
+- the core jobs listed below.
 
 You may change:
 
@@ -55,21 +55,19 @@ Avoid:
 - designs that only work in LTR;
 - oversized cards for dense operational data.
 
-## Core Routes
+## Core Product Jobs
 
-Current route intent:
-
-- `/sign-in`: login.
-- `/`: operational overview.
-- `/search`: live search and save-as-monitor flow.
-- `/monitors`: monitor list and actions.
-- `/monitors/:taskId`: monitor detail, baseline, listings, updates, runs.
-- `/updates`: event inbox for baseline/new/changed/offer events.
-- `/opportunities`: stored listing database.
-- `/runs`: scheduler run diagnostics.
-- `/recipients`: Rubika destinations and test sending.
-- `/users`: admin-only user management.
-- `/settings/*`: local appearance, notification policy, account/system notes.
+- Login.
+- Operational overview.
+- Live search and save-as-monitor flow.
+- Monitor list and monitor actions.
+- Monitor detail: baseline, listings, updates, and runs.
+- Event inbox for baseline/new/changed/offer events.
+- Stored listing database.
+- Scheduler run diagnostics.
+- Rubika destinations and test sending.
+- Admin-only user management.
+- Basic settings for appearance, notification policy, and account/system notes.
 
 Routes can be renamed if the UX becomes clearer, but the workbench must still
 cover these jobs.
@@ -83,8 +81,8 @@ cover these jobs.
 5. Run diagnostics should make failures easy to triage.
 6. Users should be able to move from a notification to its listing, monitor,
    run, and external Setad page.
-7. The interface should be comfortable for Persian text, long organization
-   names, long tender titles, numbers, dates, and mixed Persian/English text.
+7. The interface should handle Persian text, long organization names, long
+   tender titles, numbers, dates, and mixed Persian/English text gracefully.
 
 ## Design System Expectations
 
@@ -98,9 +96,7 @@ cover these jobs.
 - Keep mobile usable, but optimize first for desktop operations.
 - Keep accessibility and keyboard navigation in mind.
 
-## Backend API
-
-Start with:
+## Backend API Starting Points
 
 - `frontend-workbench/src/lib/setad-api.ts`
 - `backend/app/main.py`
@@ -109,24 +105,7 @@ Start with:
 The frontend already calls the backend through `/api`. Do not call Setad
 directly from the browser.
 
-## How To Run
-
-Backend:
-
-```bash
-python -m pip install -r backend/requirements.txt
-PYTHONPATH=backend uvicorn app.main:app --host 127.0.0.1 --port 8765
-```
-
-Frontend:
-
-```bash
-cd frontend-workbench
-pnpm install
-pnpm dev --host 127.0.0.1 --port 5180
-```
-
-Validation:
+## Validation
 
 ```bash
 PYTHONPATH=backend python -m unittest discover -s backend/tests -v
