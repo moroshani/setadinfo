@@ -27,8 +27,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: pnpm
-          cache-dependency-path: frontend-workbench/pnpm-lock.yaml
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
@@ -52,5 +50,6 @@ jobs:
           ! grep -RInE '5\.159|ariaproject|@setadinfobot|Test setad|Setadinfochannel' \
             --exclude-dir=.git \
             --exclude=pnpm-lock.yaml \
+            --exclude=ci.yml \
             --exclude=github-actions-ci.example.yml \
             .
