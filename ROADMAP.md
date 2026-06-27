@@ -16,20 +16,21 @@
 - مستندات فارسی برای اجرا، استقرار، معماری، Rubika و انتشار عمومی.
 - مخزن عمومی پاک‌سازی‌شده بدون فایل‌های عملیاتی خصوصی، توکن، دامپ، کلید SSH یا
   فونت تجاری.
+- قرارداد فعلی API فرانت‌اند در `docs/api-contract.md` مستند شده است.
 
 ## اولویت‌های بعدی
 
-1. بازطراحی کامل UX/UI فرانت‌اند بر اساس
-   [FRONTEND_REDESIGN_BRIEF.md](FRONTEND_REDESIGN_BRIEF.md).
-2. فعال کردن GitHub Actions واقعی بعد از دادن `workflow` scope به GitHub token
-   و کپی کردن `docs/github-actions-ci.example.yml` به `.github/workflows/ci.yml`.
-3. اضافه کردن migrations رسمی پایگاه داده، مثلا Alembic، تا schema production
+1. اضافه کردن migrations رسمی پایگاه داده، مثلا Alembic، تا schema production
    فقط با startup bootstrap مدیریت نشود.
-4. ساخت seed/demo mode برای نمایش امن‌تر UI بدون اتصال به داده واقعی.
+2. ساخت seed/demo mode برای نمایش امن‌تر UI بدون اتصال به داده واقعی.
+3. نوشتن workflowهای کوتاه محصول برای جستجو، ساخت پایش، بررسی اعلان، مزایده،
+   خطای اجرا و مدیریت مقصدها.
+4. بازطراحی کامل UX/UI فرانت‌اند بر اساس
+   [FRONTEND_REDESIGN_BRIEF.md](FRONTEND_REDESIGN_BRIEF.md).
 5. تکمیل QA تصویری بعد از بازطراحی، شامل viewport دسکتاپ و موبایل.
 6. سخت‌تر کردن observability production: structured logs، export خطاها و run
    failure dashboard.
-7. مستندسازی دقیق‌تر API عمومی داخلی برای مصرف فرانت‌اند.
+7. مستندسازی دقیق‌تر API عمومی داخلی برای مصرف‌های بیرون از فرانت‌اند فعلی.
 
 ## خط قرمزهای انتشار عمومی
 
@@ -38,4 +39,3 @@
 - توکن Rubika، chat ID، کلید SSH، دامپ PostgreSQL و اسکرین‌شات خصوصی وارد مخزن
   نشود.
 - فونت‌های تجاری یا کاربر-فراهم‌شده بدون مجوز بازنشر وارد مخزن نشوند.
-

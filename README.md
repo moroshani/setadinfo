@@ -180,6 +180,7 @@ WORKBENCH_URL=http://127.0.0.1:5181 node scripts/capture-public-screenshots.mjs
 
 - [راهنمای بازطراحی فرانت‌اند](FRONTEND_REDESIGN_BRIEF.md)
 - [Roadmap](ROADMAP.md)
+- [قرارداد API فرانت‌اند](docs/api-contract.md)
 - [معماری](docs/architecture.md)
 - [استقرار](docs/deployment.md)
 - [پایداری جستجوی زنده](docs/live-search-reliability.md)
