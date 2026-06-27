@@ -1,0 +1,13 @@
+SetadInfo
+=========
+
+SetadInfo is released under the MIT License.
+
+The new workbench UI direction is based on satnaing/shadcn-admin, which is
+also MIT licensed:
+
+Copyright (c) 2024 Sat Naing
+https://github.com/satnaing/shadcn-admin
+
+Public releases must not include private deployment files, production secrets,
+database dumps, VPS access material, or real notification recipient IDs.

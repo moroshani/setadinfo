@@ -1,0 +1,27 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+dist/
+build/
+.ops-private/
+.codex/
+.probe/
+*.log
+tmp/
+/data/
+backend/data/
+backend/wheelhouse/
+*.tar.gz
+*.tgz
+*.zip
+qa/screenshots/*.png
+qa/screenshots/*.jpg
+qa/screenshots/*.webp
+YekanBakh4 Pro/
+frontend-workbench/public/fonts/YekanBakh*.ttf

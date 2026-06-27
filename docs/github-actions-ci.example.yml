@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r backend/requirements.txt
+      - run: PYTHONPATH=backend python -m unittest discover -s backend/tests -v
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-workbench
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend-workbench/pnpm-lock.yaml
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm build
+
+  public-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Block private operations material
+        run: |
+          test ! -d .ops-private
+          ! find . \
+            -path './.git' -prune -o \
+            \( -name '*.dump' -o -name '*.pem' -o -name '*.key' -o -name '.env' \
+               -o -path './backend/data/*' -o -path './backend/wheelhouse/*' \
+               -o -path './frontend-workbench/public/fonts/YekanBakh*.ttf' \) \
+            -print | grep .
+      - name: Block known private identifiers
+        run: |
+          ! grep -RInE '5\.159|ariaproject|@setadinfobot|Test setad|Setadinfochannel' \
+            --exclude-dir=.git \
+            --exclude=pnpm-lock.yaml \
+            --exclude=github-actions-ci.example.yml \
+            .

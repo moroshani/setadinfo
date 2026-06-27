@@ -1,0 +1,17 @@
+.git
+.ops-private
+.probe
+qa
+frontend/node_modules
+frontend/
+frontend-workbench/node_modules
+frontend-workbench/dist
+docs/assets/screenshots
+backend/data
+backend/wheelhouse
+**/__pycache__
+**/*.pyc
+*.log
+.env
+.env.*
+!*.env.example
