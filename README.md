@@ -148,6 +148,18 @@ pnpm lint
 pnpm build
 ```
 
+## مهاجرت پایگاه داده
+
+برای پایگاه داده تازه:
+
+```bash
+alembic -c alembic.ini upgrade head
+```
+
+برای پایگاه داده موجود، ابتدا backup بگیرید و اگر schema فعلی از قبل وجود دارد
+از `stamp head` استفاده کنید. جزئیات در
+[مهاجرت پایگاه داده](docs/migrations.md) آمده است.
+
 برای ساخت اسکرین‌شات‌های عمومی با داده نمونه:
 
 ```bash
@@ -181,6 +193,7 @@ WORKBENCH_URL=http://127.0.0.1:5181 node scripts/capture-public-screenshots.mjs
 - [راهنمای بازطراحی فرانت‌اند](FRONTEND_REDESIGN_BRIEF.md)
 - [Roadmap](ROADMAP.md)
 - [قرارداد API فرانت‌اند](docs/api-contract.md)
+- [مهاجرت پایگاه داده](docs/migrations.md)
 - [معماری](docs/architecture.md)
 - [استقرار](docs/deployment.md)
 - [پایداری جستجوی زنده](docs/live-search-reliability.md)
