@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Menu, X } from 'lucide-react'
+import { Menu, RadioTower, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   SidebarMenu,
@@ -23,10 +23,17 @@ export function AppTitle() {
             <Link
               to='/'
               onClick={() => setOpenMobile(false)}
-              className='grid flex-1 text-start text-sm leading-tight'
+              className='flex flex-1 items-center gap-2 text-start text-sm leading-tight'
             >
-              <span className='truncate font-bold'>Shadcn-Admin</span>
-              <span className='truncate text-xs'>Vite + ShadcnUI</span>
+              <span className='bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-md'>
+                <RadioTower className='size-4' />
+              </span>
+              <span className='grid min-w-0'>
+                <span className='truncate font-bold'>SetadInfo</span>
+                <span className='text-muted-foreground truncate text-xs'>
+                  ورک‌بنچ پایش عمومی ستاد
+                </span>
+              </span>
             </Link>
             <ToggleSidebar />
           </div>

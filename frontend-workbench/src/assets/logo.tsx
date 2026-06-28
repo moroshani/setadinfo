@@ -17,8 +17,15 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
       className={cn('size-6', className)}
       {...props}
     >
-      <title>Shadcn-Admin</title>
-      <path d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3' />
+      <title>SetadInfo</title>
+      <path d='M4 18V8' />
+      <path d='M20 18V8' />
+      <path d='M8 18V6' />
+      <path d='M16 18V6' />
+      <path d='M12 18V4' />
+      <path d='M3 18h18' />
+      <path d='M6 21h12' />
+      <path d='M9 9h6' />
     </svg>
   )
 }

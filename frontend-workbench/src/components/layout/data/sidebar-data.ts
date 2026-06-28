@@ -4,7 +4,6 @@ import {
   Search,
   Bell,
   Settings,
-  RadioTower,
   Users,
   ListChecks,
   Send,
@@ -16,15 +15,8 @@ export const sidebarData: SidebarData = {
   user: {
     name: 'SetadInfo',
     email: 'workbench',
-    avatar: '/avatars/shadcn.jpg',
+    avatar: '',
   },
-  teams: [
-    {
-      name: 'SetadInfo',
-      logo: RadioTower,
-      plan: 'پایش عمومی ستاد',
-    },
-  ],
   navGroups: [
     {
       title: 'ورک‌بنچ',
