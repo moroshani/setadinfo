@@ -108,8 +108,9 @@ function formatDate(value: string | null | undefined) {
 }
 
 function boardLabel(code: number | null | undefined) {
-  if (code === 1) return 'مناقصه'
-  if (code === 2) return 'مزایده'
+  if (code === 1) return 'خرید'
+  if (code === 2) return 'مناقصه'
+  if (code === 3) return 'مزایده'
   return 'عمومی'
 }
 
@@ -122,8 +123,10 @@ function boardValue(value: string) {
 function eventLabel(type: string) {
   const labels: Record<string, string> = {
     baseline: 'اولیه',
+    new_listing: 'جدید',
     listing_new: 'جدید',
     listing_changed: 'تغییر',
+    removed_listing: 'حذف',
     listing_removed: 'حذف',
     offer_new: 'پیشنهاد تازه',
     offer_changed: 'تغییر پیشنهاد',
@@ -760,52 +763,106 @@ export function SetadOverview() {
   const stats = dashboardQuery.data?.stats
   const tasks = dashboardQuery.data?.tasks ?? []
   const updates = updatesQuery.data?.items ?? []
-  const successfulRuns = stats?.total_runs
-    ? Math.round((stats.total_runs / Math.max(stats.total_runs, 1)) * 100)
-    : 0
+  const refreshedAt = dashboardQuery.dataUpdatedAt || 0
+  const tasksWithoutBaseline = tasks.filter(
+    (task) => task.enabled && !task.baseline_notified_at
+  )
+  const dueTasks = tasks.filter((task) => {
+    if (!task.enabled || !task.next_run_at) return false
+    const nextRun = new Date(task.next_run_at).getTime()
+    return !Number.isNaN(nextRun) && nextRun <= refreshedAt
+  })
+  const offerTasks = tasks.filter((task) => task.enabled && task.include_offers)
+  const latestUpdate = updates[0]
   const metrics = [
     { label: 'پایش فعال', value: stats?.enabled_tasks ?? 0, icon: ListChecks },
     { label: 'کل پایش‌ها', value: stats?.total_tasks ?? 0, icon: Bell },
     { label: 'آگهی ذخیره‌شده', value: stats?.total_listings ?? 0, icon: Gavel },
     { label: 'اجرای ثبت‌شده', value: stats?.total_runs ?? 0, icon: CheckCircle2 },
   ]
+  const queues = [
+    {
+      title: 'بدون baseline',
+      value: tasksWithoutBaseline.length,
+      detail: 'پایش‌های فعال که هنوز اجرای اولیه موفق ندارند.',
+      href: '/monitors',
+      icon: Database,
+    },
+    {
+      title: 'موعد اجرا رسیده',
+      value: dueTasks.length,
+      detail: 'پایش‌هایی که زمان اجرای بعدی آن‌ها گذشته است.',
+      href: '/runs',
+      icon: Clock3,
+    },
+    {
+      title: 'دارای پیشنهاد مزایده',
+      value: offerTasks.length,
+      detail: 'پایش‌هایی که history پیشنهادها را هم بررسی می‌کنند.',
+      href: '/opportunities',
+      icon: Gavel,
+    },
+  ]
+  const workflowLinks = [
+    {
+      title: 'کشف فرصت',
+      detail: 'جستجوی زنده، ساخت فیلتر، بررسی نتیجه و ذخیره پایش.',
+      href: '/search',
+      icon: Search,
+    },
+    {
+      title: 'رسیدگی به تغییرها',
+      detail: 'baseline، آگهی جدید، تغییر آگهی و تغییر پیشنهاد.',
+      href: '/updates',
+      icon: Bell,
+    },
+    {
+      title: 'کنترل عملیات',
+      detail: 'اجرای دستی، خطای scheduler، مقصدهای Rubika و کاربران.',
+      href: '/runs',
+      icon: Activity,
+    },
+  ]
 
   return (
-    <div className='space-y-6' dir='rtl'>
-      <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
-        <div>
-          <p className='text-muted-foreground text-sm'>ورک‌بنچ SetadInfo</p>
-          <h1 className='text-2xl font-bold tracking-normal'>
-            مرکز پایش مناقصه و مزایده عمومی Setad
-          </h1>
-          <p className='text-muted-foreground mt-2 text-sm'>
-            آخرین اجرای ثبت‌شده: {formatDate(stats?.last_run)}
-          </p>
+    <div className='space-y-5' dir='rtl'>
+      <section className='border-b pb-5'>
+        <div className='flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between'>
+          <div className='max-w-3xl'>
+            <p className='text-muted-foreground text-sm'>ورک‌بنچ SetadInfo</p>
+            <h1 className='mt-1 text-2xl font-semibold tracking-normal md:text-3xl'>
+              کنترل روزانه فرصت‌ها، پایش‌ها و تغییرات Setad
+            </h1>
+            <p className='text-muted-foreground mt-3 text-sm leading-7'>
+              از اینجا وضعیت عملیاتی را ببینید، فیلتر جدید بسازید، تغییرهای تازه
+              را triage کنید و مزایده‌های دارای پیشنهاد را جدا بررسی کنید.
+            </p>
+          </div>
+          <div className='flex flex-wrap gap-2'>
+            <Button asChild>
+              <Link to='/search'>
+                <Search className='size-4' />
+                جستجوی زنده
+              </Link>
+            </Button>
+            <Button variant='outline' asChild>
+              <Link to='/updates'>
+                <Bell className='size-4' />
+                بروزرسانی‌ها
+              </Link>
+            </Button>
+          </div>
         </div>
-        <div className='flex flex-wrap gap-2'>
-          <Button asChild>
-            <Link to='/search'>
-              <Search className='size-4' />
-              جستجوی زنده
-            </Link>
-          </Button>
-          <Button variant='outline' asChild>
-            <Link to='/monitors'>
-              <ListChecks className='size-4' />
-              پایش‌ها
-            </Link>
-          </Button>
-        </div>
-      </div>
+      </section>
 
       <ApiState
         error={dashboardQuery.error}
         isLoading={dashboardQuery.isLoading}
       />
 
-      <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
+      <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
         {metrics.map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
+          <Card key={label} className='rounded-md'>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium'>{label}</CardTitle>
               <Icon className='text-muted-foreground size-4' />
@@ -813,20 +870,59 @@ export function SetadOverview() {
             <CardContent>
               <div className='text-2xl font-bold'>{formatNumber(value)}</div>
               <p className='text-muted-foreground text-xs'>
-                خوانده‌شده از API داخلی SetadInfo
+                آخرین اجرا: {formatDate(stats?.last_run)}
               </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className='grid gap-4 xl:grid-cols-[1.3fr_0.7fr]'>
-        <Card>
+      <div className='grid gap-3 lg:grid-cols-3'>
+        {queues.map(({ title, value, detail, href, icon: Icon }) => (
+          <Card key={title} className='rounded-md'>
+            <CardHeader className='space-y-0 pb-2'>
+              <div className='flex items-center justify-between gap-3'>
+                <CardTitle className='text-sm font-medium'>{title}</CardTitle>
+                <Icon className='text-muted-foreground size-4' />
+              </div>
+            </CardHeader>
+            <CardContent className='space-y-3'>
+              <div className='text-2xl font-semibold'>{formatNumber(value)}</div>
+              <p className='text-muted-foreground min-h-10 text-xs leading-5'>
+                {detail}
+              </p>
+              <Button variant='outline' size='sm' asChild>
+                <Link to={href}>باز کردن</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className='grid gap-3 lg:grid-cols-3'>
+        {workflowLinks.map(({ title, detail, href, icon: Icon }) => (
+          <Link
+            key={title}
+            to={href}
+            className='focus-visible:ring-ring rounded-md border p-4 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:outline-none'
+          >
+            <div className='flex items-center gap-2'>
+              <Icon className='text-muted-foreground size-4' />
+              <span className='font-medium'>{title}</span>
+            </div>
+            <p className='text-muted-foreground mt-2 text-xs leading-6'>
+              {detail}
+            </p>
+          </Link>
+        ))}
+      </div>
+
+      <div className='grid gap-4 xl:grid-cols-[1.15fr_0.85fr]'>
+        <Card className='rounded-md'>
           <CardHeader>
             <CardTitle>پایش‌های مهم</CardTitle>
             <CardDescription>
-              هر پایش یک baseline اولیه دارد و بعد از آن فقط تغییرات معنی‌دار
-              نمایش داده می‌شود.
+              پایش‌ها را از نظر baseline، اجرای بعدی و فعال بودن کنترل کنید.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -834,7 +930,7 @@ export function SetadOverview() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className='rounded-md'>
           <CardHeader>
             <CardTitle>کارت‌های بروزرسانی</CardTitle>
             <CardDescription>
@@ -854,11 +950,16 @@ export function SetadOverview() {
         </Card>
       </div>
 
-      <p className='text-muted-foreground text-xs'>
-        شاخص موفقیت فعلا از داده‌های تجمیعی backend خوانده می‌شود:
-        {' '}
-        {formatNumber(successfulRuns)}٪
-      </p>
+      {latestUpdate ? (
+        <div className='rounded-md border border-dashed p-4 text-sm'>
+          <span className='text-muted-foreground'>آخرین رویداد: </span>
+          <strong>{latestUpdate.title}</strong>
+          <span className='text-muted-foreground'>
+            {' '}
+            ({eventLabel(latestUpdate.event_type)}، {formatDate(latestUpdate.created_at)})
+          </span>
+        </div>
+      ) : null}
     </div>
   )
 }
