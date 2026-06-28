@@ -20,17 +20,17 @@
 - Alembic و migration اولیه schema در مخزن اضافه شده است.
 - seed/demo mode محلی برای بازبینی امن UI بدون اتصال به Setad و Rubika اضافه
   شده است.
+- جریان‌های اصلی محصول برای بازطراحی UI/UX در `docs/product-workflows.md`
+  مستند شده‌اند.
 
 ## اولویت‌های بعدی
 
-1. نوشتن workflowهای کوتاه محصول برای جستجو، ساخت پایش، بررسی اعلان، مزایده،
-   خطای اجرا و مدیریت مقصدها.
-2. بازطراحی کامل UX/UI فرانت‌اند بر اساس
+1. بازطراحی کامل UX/UI فرانت‌اند بر اساس
    [FRONTEND_REDESIGN_BRIEF.md](FRONTEND_REDESIGN_BRIEF.md).
-3. تکمیل QA تصویری بعد از بازطراحی، شامل viewport دسکتاپ و موبایل.
-4. سخت‌تر کردن observability production: structured logs، export خطاها و run
+2. تکمیل QA تصویری بعد از بازطراحی، شامل viewport دسکتاپ و موبایل.
+3. سخت‌تر کردن observability production: structured logs، export خطاها و run
    failure dashboard.
-5. مستندسازی دقیق‌تر API عمومی داخلی برای مصرف‌های بیرون از فرانت‌اند فعلی.
+4. مستندسازی دقیق‌تر API عمومی داخلی برای مصرف‌های بیرون از فرانت‌اند فعلی.
 
 ## خط قرمزهای انتشار عمومی
 
