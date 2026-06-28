@@ -174,6 +174,18 @@ function eventOfferPayload(event: NotificationEvent) {
     : null
 }
 
+function eventChangeEntries(event: NotificationEvent) {
+  const changes = event.payload?.changes
+  if (!changes || typeof changes !== 'object') return []
+  return Object.entries(changes as Record<string, unknown>).slice(0, 6)
+}
+
+function formatChangeValue(value: unknown) {
+  if (value === null || value === undefined || value === '') return 'ثبت نشده'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
 const recipientTypeLabels: Record<RubikaRecipientType, string> = {
   user: 'کاربر',
   chat: 'گروه',
@@ -316,7 +328,11 @@ function UpdatesList({
   return (
     <div className='grid gap-3 xl:grid-cols-2'>
       {items.map((item) => (
-        <div key={item.id} className='rounded-md border p-4 text-sm'>
+        <div
+          key={item.id}
+          className='rounded-md border p-4 text-sm data-[severity=warning]:border-amber-300 data-[severity=warning]:bg-amber-50/40 dark:data-[severity=warning]:bg-amber-950/10'
+          data-severity={item.severity}
+        >
           <div className='mb-2 flex items-start justify-between gap-3'>
             <div>
               <strong className='leading-6'>{item.title}</strong>
@@ -359,7 +375,32 @@ function UpdatesList({
               </>
             ) : null}
           </div>
-          <div className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
+          {eventChangeEntries(item).length ? (
+            <div className='mt-3 rounded-md border border-dashed p-3 text-xs'>
+              <div className='mb-2 font-medium'>تغییرهای ثبت‌شده</div>
+              <div className='grid gap-2 md:grid-cols-2'>
+                {eventChangeEntries(item).map(([field, value]) => {
+                  const change =
+                    value && typeof value === 'object'
+                      ? (value as Record<string, unknown>)
+                      : { after: value }
+                  return (
+                    <div key={field} className='min-w-0'>
+                      <span className='text-muted-foreground font-mono'>
+                        {field}:{' '}
+                      </span>
+                      <span className='break-words'>
+                        {formatChangeValue(change.before)}
+                        {' -> '}
+                        {formatChangeValue(change.after)}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
+          <div className='text-muted-foreground mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs'>
             <span>پایش: {item.task_id}</span>
             <span>اجرا: {formatNumber(item.run_id)}</span>
             <span>{formatDate(item.created_at)}</span>
@@ -1323,9 +1364,9 @@ export function SetadUpdatesPage() {
             <SelectContent>
               <SelectItem value='all'>همه رویدادها</SelectItem>
               <SelectItem value='baseline'>baseline اولیه</SelectItem>
-              <SelectItem value='listing_new'>آگهی جدید</SelectItem>
+              <SelectItem value='new_listing'>آگهی جدید</SelectItem>
               <SelectItem value='listing_changed'>تغییر آگهی</SelectItem>
-              <SelectItem value='listing_removed'>حذف آگهی</SelectItem>
+              <SelectItem value='removed_listing'>حذف آگهی</SelectItem>
               <SelectItem value='offer_new'>پیشنهاد جدید</SelectItem>
               <SelectItem value='offer_changed'>تغییر پیشنهاد</SelectItem>
             </SelectContent>
