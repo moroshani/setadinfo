@@ -350,7 +350,15 @@ function UpdatesList({
                   .filter(Boolean)
                   .join(' / '),
               ],
-              ['مهلت ارسال', eventListingPayload(item).send_deadline],
+              [
+                'مهلت ارسال',
+                formatDate(
+                  eventListingPayload(item).send_deadline as
+                    | string
+                    | null
+                    | undefined
+                ),
+              ],
               [
                 'قیمت پایه',
                 formatMoney(Number(eventListingPayload(item).price) || null),

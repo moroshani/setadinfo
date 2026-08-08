@@ -6,10 +6,15 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
+import {
+  RouterProvider,
+  createHashHistory,
+  createRouter,
+} from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { handleServerError } from '@/lib/handle-server-error'
+import { isPublicDemo } from '@/lib/public-demo-api'
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
 import { ThemeProvider } from './context/theme-provider'
@@ -73,11 +78,14 @@ const queryClient = new QueryClient({
 })
 
 // Create a new router instance
+const demoHistory = isPublicDemo ? createHashHistory() : undefined
+
 const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
+  ...(demoHistory ? { history: demoHistory } : {}),
 })
 
 // Register the router instance for type safety

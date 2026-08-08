@@ -16,7 +16,7 @@
   }
   body {
     @apply min-h-svh w-full bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: Tahoma, 'Inter', system-ui, sans-serif;
     letter-spacing: 0;
   }
 

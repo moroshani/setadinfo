@@ -7,8 +7,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:demo": "tsc -b && vite build --mode public-demo --outDir dist-demo",
+    "verify:demo": "pnpm build:demo && node scripts/verify-public-demo.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
+    "preview:demo": "vite preview --outDir dist-demo",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "knip": "knip",

@@ -1,3 +1,5 @@
+import { isPublicDemo, requestPublicDemo } from './public-demo-api'
+
 export type DashboardStats = {
   total_tasks: number
   enabled_tasks: number
@@ -203,6 +205,8 @@ export class SetadApiError extends Error {
 }
 
 async function request<T>(path: string): Promise<T> {
+  if (isPublicDemo) return requestPublicDemo<T>(path)
+
   const response = await fetch(path, {
     credentials: 'include',
     headers: { Accept: 'application/json' },
@@ -223,6 +227,8 @@ async function request<T>(path: string): Promise<T> {
 }
 
 async function send<T>(path: string, method: 'POST' | 'PUT', body: unknown) {
+  if (isPublicDemo) return requestPublicDemo<T>(path, method, body)
+
   const response = await fetch(path, {
     method,
     credentials: 'include',
@@ -248,6 +254,8 @@ async function send<T>(path: string, method: 'POST' | 'PUT', body: unknown) {
 }
 
 async function destroy<T>(path: string) {
+  if (isPublicDemo) return requestPublicDemo<T>(path, 'DELETE')
+
   const response = await fetch(path, {
     method: 'DELETE',
     credentials: 'include',

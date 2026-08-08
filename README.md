@@ -3,6 +3,8 @@
 [![CI](https://github.com/moroshani/setadinfo/actions/workflows/ci.yml/badge.svg)](https://github.com/moroshani/setadinfo/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/moroshani/setadinfo/actions/workflows/codeql.yml/badge.svg)](https://github.com/moroshani/setadinfo/actions/workflows/codeql.yml)
 
+**[آزمایش نسخه نمایشی عمومی](https://moroshani.github.io/setadinfo/)**
+
 > وضعیت: پروژه در حال توسعه فعال است و هنوز کاربر خارجی گزارش‌شده‌ای ندارد.
 > مخزن برای بازبینی، آزمایش و مشارکت عمومی باز است.
 
@@ -14,6 +16,32 @@ SetadInfo یک ورک‌بنچ فارسی و راست‌به‌چپ برای ج�
 > این مخزن برای انتشار متن‌باز آماده شده است. هیچ توکن، chat ID، کلید SSH،
 > دامپ پایگاه داده، اسکرین‌شات خصوصی یا فایل محیطی واقعی نباید وارد مخزن عمومی
 > شود.
+
+## آزمایشگاه عمومی آنلاین
+
+نسخه نمایشی عمومی روی GitHub Pages منتشر می‌شود و تمام مسیرهای اصلی ورک‌بنچ را
+بدون ورود یا راه‌اندازی سرور در اختیار بازدیدکننده می‌گذارد:
+
+- داده‌ها کاملا ساختگی و با برچسب نمونه هستند.
+- تمام درخواست‌ها در مرورگر پاسخ داده می‌شوند؛ نسخه نمایشی هیچ درخواست `/api`
+  به بک‌اند، Setad یا Rubika ارسال نمی‌کند.
+- ساخت پایش و تغییر تنظیمات فقط در حافظه همان صفحه انجام می‌شود و با بارگذاری
+  دوباره به حالت اولیه برمی‌گردد.
+- مسیریابی hash باعث می‌شود همه صفحه‌ها روی GitHub Pages و بدون rewrite سرور
+  کار کنند.
+
+برای ساخت و بررسی کامل نسخه نمایشی در محیط محلی:
+
+```bash
+cd frontend-workbench
+pnpm install --frozen-lockfile
+pnpm verify:demo
+```
+
+این فرمان bundle نهایی را می‌سازد، آن را زیر مسیر واقعی `/setadinfo/` سرو می‌کند،
+همه مسیرها و جستجو را در desktop و mobile آزمایش می‌کند و در صورت مشاهده
+درخواست API، خطای مرورگر یا overflow شکست می‌خورد. جزئیات دو حالت داده نمونه در
+[راهنمای داده نمایشی](docs/demo-data.md) آمده است.
 
 ## تصویر کلی
 
@@ -159,6 +187,7 @@ pnpm lint
 pnpm exec playwright install chromium
 pnpm test
 pnpm build
+pnpm verify:demo
 ```
 
 ## مهاجرت پایگاه داده

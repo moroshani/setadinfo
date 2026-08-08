@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Menu, RadioTower, X } from 'lucide-react'
+import { isPublicDemo } from '@/lib/public-demo-api'
 import { cn } from '@/lib/utils'
 import {
   SidebarMenu,
@@ -25,13 +26,15 @@ export function AppTitle() {
               onClick={() => setOpenMobile(false)}
               className='flex flex-1 items-center gap-2 text-start text-sm leading-tight'
             >
-              <span className='bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-md'>
+              <span className='flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground'>
                 <RadioTower className='size-4' />
               </span>
               <span className='grid min-w-0'>
                 <span className='truncate font-bold'>SetadInfo</span>
-                <span className='text-muted-foreground truncate text-xs'>
-                  ورک‌بنچ پایش عمومی ستاد
+                <span className='truncate text-xs text-muted-foreground'>
+                  {isPublicDemo
+                    ? 'آزمایشگاه عمومی با داده ساختگی'
+                    : 'ورک‌بنچ پایش عمومی ستاد'}
                 </span>
               </span>
             </Link>

@@ -7,7 +7,13 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { playwright } from '@vitest/browser-playwright'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'public-demo' ? '/setadinfo/' : '/',
+  define: {
+    'import.meta.env.VITE_PUBLIC_DEMO': JSON.stringify(
+      mode === 'public-demo' ? 'true' : 'false'
+    ),
+  },
   plugins: [
     tanstackRouter({
       target: 'react',
@@ -46,4 +52,4 @@ export default defineConfig({
       ],
     },
   },
-})
+}))

@@ -67,6 +67,16 @@ function formatMoney(value: number | null | undefined) {
   return `${formatNumber(value)} ریال`
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return 'ثبت نشده'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('fa-IR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date)
+}
+
 function displayValue(value: string | number | null | undefined) {
   if (value === null || value === undefined || value === '') return 'ثبت نشده'
   return String(value)
@@ -219,53 +229,112 @@ function ResultsTable({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>شماره</TableHead>
-          <TableHead>عنوان</TableHead>
-          <TableHead>نوع</TableHead>
-          <TableHead>سازمان</TableHead>
-          <TableHead>موقعیت</TableHead>
-          <TableHead>مهلت ارسال</TableHead>
-          <TableHead>مبلغ</TableHead>
-          <TableHead>اقدام</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <>
+      <div className='divide-y md:hidden'>
         {items.map((listing) => (
-          <TableRow key={listing.source_key || listing.id}>
-            <TableCell>
-              {listing.trade_number || listing.party_number}
-            </TableCell>
-            <TableCell className='max-w-[28rem] leading-6 font-medium whitespace-normal'>
-              {listing.title || 'بدون عنوان'}
-            </TableCell>
-            <TableCell>{boardLabel(listing.board_code)}</TableCell>
-            <TableCell className='max-w-[18rem] leading-6 whitespace-normal'>
-              {listing.organization || 'نامشخص'}
-            </TableCell>
-            <TableCell>
-              {[listing.province, listing.city].filter(Boolean).join(' / ') ||
-                'نامشخص'}
-            </TableCell>
-            <TableCell>{listing.send_deadline || 'ثبت نشده'}</TableCell>
-            <TableCell>{formatMoney(listing.price)}</TableCell>
-            <TableCell>
+          <article
+            key={listing.source_key || listing.id}
+            className='space-y-3 py-4 first:pt-0 last:pb-0'
+          >
+            <div className='flex items-start justify-between gap-3'>
+              <div className='min-w-0'>
+                <div className='mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
+                  <span dir='ltr'>
+                    {listing.trade_number || listing.party_number}
+                  </span>
+                  <Badge variant='outline'>
+                    {boardLabel(listing.board_code)}
+                  </Badge>
+                </div>
+                <h3 className='leading-7 font-semibold'>
+                  {listing.title || 'بدون عنوان'}
+                </h3>
+              </div>
               <Button
                 type='button'
-                size='sm'
+                size='icon'
                 variant='outline'
+                title='بررسی آگهی'
                 onClick={() => onInspect(listing)}
               >
                 <Eye className='size-4' />
-                بررسی
               </Button>
-            </TableCell>
-          </TableRow>
+            </div>
+            <p className='text-sm leading-6 text-muted-foreground'>
+              {listing.organization || 'سازمان نامشخص'}
+              {' · '}
+              {[listing.province, listing.city].filter(Boolean).join(' / ') ||
+                'موقعیت نامشخص'}
+            </p>
+            <dl className='grid grid-cols-2 gap-3 text-sm'>
+              <div>
+                <dt className='text-xs text-muted-foreground'>مهلت ارسال</dt>
+                <dd className='mt-1 font-medium'>
+                  {formatDate(listing.send_deadline)}
+                </dd>
+              </div>
+              <div>
+                <dt className='text-xs text-muted-foreground'>مبلغ</dt>
+                <dd className='mt-1 font-medium'>
+                  {formatMoney(listing.price)}
+                </dd>
+              </div>
+            </dl>
+          </article>
         ))}
-      </TableBody>
-    </Table>
+      </div>
+
+      <div className='hidden md:block'>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>شماره</TableHead>
+              <TableHead>عنوان</TableHead>
+              <TableHead>نوع</TableHead>
+              <TableHead>سازمان</TableHead>
+              <TableHead>موقعیت</TableHead>
+              <TableHead>مهلت ارسال</TableHead>
+              <TableHead>مبلغ</TableHead>
+              <TableHead>اقدام</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((listing) => (
+              <TableRow key={listing.source_key || listing.id}>
+                <TableCell>
+                  {listing.trade_number || listing.party_number}
+                </TableCell>
+                <TableCell className='max-w-[28rem] leading-6 font-medium whitespace-normal'>
+                  {listing.title || 'بدون عنوان'}
+                </TableCell>
+                <TableCell>{boardLabel(listing.board_code)}</TableCell>
+                <TableCell className='max-w-[18rem] leading-6 whitespace-normal'>
+                  {listing.organization || 'نامشخص'}
+                </TableCell>
+                <TableCell>
+                  {[listing.province, listing.city]
+                    .filter(Boolean)
+                    .join(' / ') || 'نامشخص'}
+                </TableCell>
+                <TableCell>{formatDate(listing.send_deadline)}</TableCell>
+                <TableCell>{formatMoney(listing.price)}</TableCell>
+                <TableCell>
+                  <Button
+                    type='button'
+                    size='sm'
+                    variant='outline'
+                    onClick={() => onInspect(listing)}
+                  >
+                    <Eye className='size-4' />
+                    بررسی
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   )
 }
 
@@ -625,7 +694,7 @@ export function SetadSearchPage() {
         </div>
       </div>
 
-      <div className='grid gap-4 xl:grid-cols-[0.78fr_1.22fr]'>
+      <div className='grid gap-4 2xl:grid-cols-[minmax(28rem,0.78fr)_minmax(0,1.22fr)]'>
         <div className='space-y-4'>
           <Card>
             <CardHeader>
@@ -804,10 +873,10 @@ export function SetadSearchPage() {
                 <Button
                   type='button'
                   variant='outline'
-                  className='h-auto justify-between gap-3 px-3 py-3 text-right'
+                  className='h-auto min-w-0 justify-between gap-3 px-3 py-3 text-right whitespace-normal'
                   onClick={() => openSelector('system')}
                 >
-                  <span>
+                  <span className='min-w-0'>
                     <span className='block text-sm font-medium'>
                       سامانه و نوع معامله
                     </span>
@@ -817,15 +886,15 @@ export function SetadSearchPage() {
                         : 'همه سامانه‌ها'}
                     </span>
                   </span>
-                  <Plus className='size-4' />
+                  <Plus className='size-4 shrink-0' />
                 </Button>
                 <Button
                   type='button'
                   variant='outline'
-                  className='h-auto justify-between gap-3 px-3 py-3 text-right'
+                  className='h-auto min-w-0 justify-between gap-3 px-3 py-3 text-right whitespace-normal'
                   onClick={() => openSelector('organization')}
                 >
-                  <span>
+                  <span className='min-w-0'>
                     <span className='block text-sm font-medium'>
                       دستگاه اجرایی
                     </span>
@@ -837,15 +906,15 @@ export function SetadSearchPage() {
                       )}
                     </span>
                   </span>
-                  <Plus className='size-4' />
+                  <Plus className='size-4 shrink-0' />
                 </Button>
                 <Button
                   type='button'
                   variant='outline'
-                  className='h-auto justify-between gap-3 px-3 py-3 text-right'
+                  className='h-auto min-w-0 justify-between gap-3 px-3 py-3 text-right whitespace-normal'
                   onClick={() => openSelector('category')}
                 >
-                  <span>
+                  <span className='min-w-0'>
                     <span className='block text-sm font-medium'>
                       دسته‌بندی کالا
                     </span>
@@ -857,15 +926,15 @@ export function SetadSearchPage() {
                       )}
                     </span>
                   </span>
-                  <Plus className='size-4' />
+                  <Plus className='size-4 shrink-0' />
                 </Button>
                 <Button
                   type='button'
                   variant='outline'
-                  className='h-auto justify-between gap-3 px-3 py-3 text-right'
+                  className='h-auto min-w-0 justify-between gap-3 px-3 py-3 text-right whitespace-normal'
                   onClick={() => openSelector('excludedOrganization')}
                 >
-                  <span>
+                  <span className='min-w-0'>
                     <span className='block text-sm font-medium'>
                       سازمان‌های مستثنی
                     </span>
@@ -877,7 +946,7 @@ export function SetadSearchPage() {
                       )}
                     </span>
                   </span>
-                  <Plus className='size-4' />
+                  <Plus className='size-4 shrink-0' />
                 </Button>
               </div>
 
@@ -1013,22 +1082,23 @@ export function SetadSearchPage() {
                     }
                   />
                 </Field>
-                <div className='flex items-end justify-between gap-3 rounded-md border p-3'>
-                  <div>
+                <div className='flex min-w-0 items-end justify-between gap-3 rounded-md border p-3'>
+                  <div className='min-w-0'>
                     <Label>تاریخچه پیشنهاد مزایده</Label>
                     <p className='mt-1 text-xs text-muted-foreground'>
                       برای مزایده‌ها پیشنهادها هم بررسی شوند.
                     </p>
                   </div>
                   <Switch
+                    className='shrink-0'
                     checked={includeOffers}
                     onCheckedChange={setIncludeOffers}
                   />
                 </div>
               </div>
               <div className='rounded-md border p-3'>
-                <div className='flex items-start justify-between gap-3'>
-                  <div>
+                <div className='flex min-w-0 items-start justify-between gap-3'>
+                  <div className='min-w-0'>
                     <Label>اعلان Rubika</Label>
                     <p className='mt-1 text-xs leading-5 text-muted-foreground'>
                       baseline اولیه و بروزرسانی‌های بعدی برای مقصدهای
@@ -1036,6 +1106,7 @@ export function SetadSearchPage() {
                     </p>
                   </div>
                   <Switch
+                    className='shrink-0'
                     checked={notifyRubika}
                     onCheckedChange={setNotifyRubika}
                   />
@@ -1100,7 +1171,7 @@ export function SetadSearchPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className='min-w-0'>
           <CardHeader>
             <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
               <div>
@@ -1133,7 +1204,7 @@ export function SetadSearchPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className='space-y-4'>
+          <CardContent className='min-w-0 space-y-4'>
             {searchMutation.isPending ? (
               <div className='rounded-md border p-5 text-sm text-muted-foreground'>
                 در حال دریافت داده از Setad...
@@ -1197,8 +1268,11 @@ export function SetadSearchPage() {
                           .join(' / '),
                       ],
                       ['دسته‌بندی', selectedListing.category],
-                      ['مهلت ارسال', selectedListing.send_deadline],
-                      ['مهلت اسناد', selectedListing.document_deadline],
+                      ['مهلت ارسال', formatDate(selectedListing.send_deadline)],
+                      [
+                        'مهلت اسناد',
+                        formatDate(selectedListing.document_deadline),
+                      ],
                       ['مبلغ پایه', formatMoney(selectedListing.price)],
                     ].map(([label, value]) => (
                       <div
