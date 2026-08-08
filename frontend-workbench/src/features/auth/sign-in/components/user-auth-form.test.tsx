@@ -8,10 +8,14 @@ const FORM_MESSAGES = {
   passwordEmpty: 'رمز عبور را وارد کنید.',
 } as const
 
-const navigate = vi.fn()
-const setUserMock = vi.fn()
-const loginMock = vi.fn()
-const getCurrentUserMock = vi.fn()
+const { navigate, setUserMock, loginMock, getCurrentUserMock } = vi.hoisted(
+  () => ({
+    navigate: vi.fn(),
+    setUserMock: vi.fn(),
+    loginMock: vi.fn(),
+    getCurrentUserMock: vi.fn(),
+  })
+)
 
 vi.mock('@/stores/auth-store', () => ({
   useAuthStore: () => ({
@@ -97,9 +101,11 @@ describe('UserAuthForm', () => {
 
       expect(loginMock).toHaveBeenCalledWith('operator', 'secret')
       await vi.waitFor(() => expect(setUserMock).toHaveBeenCalledOnce())
-      expect(setUserMock).toHaveBeenCalledWith(
-        { id: 'user-1', username: 'operator', role: 'operator' }
-      )
+      expect(setUserMock).toHaveBeenCalledWith({
+        id: 'user-1',
+        username: 'operator',
+        role: 'operator',
+      })
 
       await vi.waitFor(() =>
         expect(navigate).toHaveBeenCalledWith({ to: '/', replace: true })

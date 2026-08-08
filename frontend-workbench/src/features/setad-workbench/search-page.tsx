@@ -12,6 +12,22 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  type Listing,
+  type LookupItem,
+  type Offer,
+  type RubikaRecipient,
+  type TaskFilters,
+  createTask,
+  defaultTaskFilters,
+  getCategories,
+  getMetaFilters,
+  getOrganizations,
+  getRubikaRecipients,
+  liveOffers,
+  liveSearch,
+} from '@/lib/setad-api'
+import { FALLBACK_BOARD_OPTIONS, boardLabel } from '@/lib/setad-boards'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,21 +57,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  type Listing,
-  type LookupItem,
-  type Offer,
-  type RubikaRecipient,
-  type TaskFilters,
-  createTask,
-  defaultTaskFilters,
-  getCategories,
-  getMetaFilters,
-  getOrganizations,
-  getRubikaRecipients,
-  liveOffers,
-  liveSearch,
-} from '@/lib/setad-api'
 
 function formatNumber(value: number | null | undefined) {
   return new Intl.NumberFormat('fa-IR').format(value ?? 0)
@@ -69,12 +70,6 @@ function formatMoney(value: number | null | undefined) {
 function displayValue(value: string | number | null | undefined) {
   if (value === null || value === undefined || value === '') return 'ثبت نشده'
   return String(value)
-}
-
-function boardLabel(code: number | null | undefined) {
-  if (code === 1) return 'مناقصه'
-  if (code === 2) return 'مزایده'
-  return 'عمومی'
 }
 
 const recipientTypeLabels: Record<string, string> = {
@@ -95,7 +90,9 @@ function lookupLabel(item: LookupItem) {
   )
 }
 
-function lookupItems(payload: { content?: LookupItem[]; items?: LookupItem[] } | undefined) {
+function lookupItems(
+  payload: { content?: LookupItem[]; items?: LookupItem[] } | undefined
+) {
   return payload?.content ?? payload?.items ?? []
 }
 
@@ -118,7 +115,7 @@ function compactFilters(filters: TaskFilters): TaskFilters {
   const keyword =
     filters.searchTypeCode === 1
       ? filters.keyword.trim()
-      : filters.keywords[0] ?? ''
+      : (filters.keywords[0] ?? '')
 
   return {
     ...filters,
@@ -137,30 +134,27 @@ function activeFilterLabels(filters: TaskFilters) {
     labels.push(`شماره ${filters.keyword.trim()}`)
   }
   if (filters.searchTypeCode !== 1) {
-    if (filters.keywords.length) labels.push(`${filters.keywords.length} کلیدواژه`)
+    if (filters.keywords.length)
+      labels.push(`${filters.keywords.length} کلیدواژه`)
     if (filters.excludedKeywords.length) {
       labels.push(`${filters.excludedKeywords.length} حذف کلیدواژه`)
     }
   }
   if (filters.boardCodes.length) labels.push('سامانه')
-  if (filters.tagCodes.length) labels.push(`${filters.tagCodes.length} نوع معامله`)
+  if (filters.tagCodes.length)
+    labels.push(`${filters.tagCodes.length} نوع معامله`)
   if (filters.selectedOrganization.length) labels.push('دستگاه اجرایی')
   if (filters.selectedCategory.length) labels.push('دسته‌بندی')
   if (filters.notOrgId.length) labels.push('سازمان مستثنی')
   if (filters.fromSendDeadlineDate || filters.toSendDeadlineDate) {
     labels.push('مهلت ارسال')
   }
-  if (filters.fromPrice !== null || filters.toPrice !== null) labels.push('قیمت')
+  if (filters.fromPrice !== null || filters.toPrice !== null)
+    labels.push('قیمت')
   return labels
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: ReactNode
-}) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className='space-y-2'>
       <Label>{label}</Label>
@@ -169,7 +163,11 @@ function Field({
   )
 }
 
-type SelectorKind = 'system' | 'organization' | 'category' | 'excludedOrganization'
+type SelectorKind =
+  | 'system'
+  | 'organization'
+  | 'category'
+  | 'excludedOrganization'
 
 function labeledSummary(
   values: Array<string | number>,
@@ -214,7 +212,7 @@ function ResultsTable({
 }) {
   if (!items.length) {
     return (
-      <div className='text-muted-foreground rounded-md border p-5 text-sm'>
+      <div className='rounded-md border p-5 text-sm text-muted-foreground'>
         هنوز نتیجه‌ای برای نمایش وجود ندارد.
       </div>
     )
@@ -237,12 +235,14 @@ function ResultsTable({
       <TableBody>
         {items.map((listing) => (
           <TableRow key={listing.source_key || listing.id}>
-            <TableCell>{listing.trade_number || listing.party_number}</TableCell>
-            <TableCell className='max-w-[28rem] whitespace-normal font-medium leading-6'>
+            <TableCell>
+              {listing.trade_number || listing.party_number}
+            </TableCell>
+            <TableCell className='max-w-[28rem] leading-6 font-medium whitespace-normal'>
               {listing.title || 'بدون عنوان'}
             </TableCell>
             <TableCell>{boardLabel(listing.board_code)}</TableCell>
-            <TableCell className='max-w-[18rem] whitespace-normal leading-6'>
+            <TableCell className='max-w-[18rem] leading-6 whitespace-normal'>
               {listing.organization || 'نامشخص'}
             </TableCell>
             <TableCell>
@@ -305,7 +305,8 @@ export function SetadSearchPage() {
     queryKey: ['setad-organizations', selectorSearch],
     queryFn: () => getOrganizations(selectorSearch),
     enabled:
-      selectorKind === 'organization' || selectorKind === 'excludedOrganization',
+      selectorKind === 'organization' ||
+      selectorKind === 'excludedOrganization',
   })
   const categoryQuery = useQuery({
     queryKey: ['setad-categories', selectorSearch],
@@ -423,7 +424,8 @@ export function SetadSearchPage() {
           ...defaultTaskFilters(),
           monitorMode: 'item',
           searchTypeCode: 1,
-          keyword: listing.trade_number || listing.party_number || listing.source_key,
+          keyword:
+            listing.trade_number || listing.party_number || listing.source_key,
           boardCodes: listing.board_code ? [listing.board_code] : [],
           tagCodes: listing.tag_code ? [listing.tag_code] : [],
           targetSourceKey: listing.source_key,
@@ -468,10 +470,7 @@ export function SetadSearchPage() {
     },
   })
 
-  const boardOptions = metaQuery.data?.boardOptions ?? {
-    '1': { label: 'مناقصه', children: [] },
-    '2': { label: 'مزایده', children: [] },
-  }
+  const boardOptions = metaQuery.data?.boardOptions ?? FALLBACK_BOARD_OPTIONS
   const sortOptions = metaQuery.data?.sortOptions ?? [
     { label: 'مرتبط‌ترین', value: 'score' },
     { label: 'جدیدترین', value: 'lastModificationDate' },
@@ -589,26 +588,29 @@ export function SetadSearchPage() {
       ? Boolean(preparedFilters.keyword)
       : Boolean(
           preparedFilters.keywords.length ||
-            preparedFilters.boardCodes.length ||
-            preparedFilters.fromSendDeadlineDate ||
-            preparedFilters.toSendDeadlineDate ||
-            preparedFilters.fromPrice !== null ||
-            preparedFilters.toPrice !== null
+          preparedFilters.boardCodes.length ||
+          preparedFilters.fromSendDeadlineDate ||
+          preparedFilters.toSendDeadlineDate ||
+          preparedFilters.fromPrice !== null ||
+          preparedFilters.toPrice !== null
         )
 
   return (
     <div className='space-y-6' dir='rtl'>
       <div className='flex flex-col gap-3 md:flex-row md:items-start md:justify-between'>
         <div>
-          <p className='text-muted-foreground text-sm'>ورک‌بنچ SetadInfo</p>
+          <p className='text-sm text-muted-foreground'>ورک‌بنچ SetadInfo</p>
           <h1 className='text-2xl font-bold tracking-normal'>جستجوی زنده</h1>
-          <p className='text-muted-foreground mt-2 max-w-3xl leading-7'>
+          <p className='mt-2 max-w-3xl leading-7 text-muted-foreground'>
             جستجو را مثل یک کار عملیاتی بسازید، نتیجه را بررسی کنید، سپس همان
             فیلتر را به پایش زمان‌بندی‌شده تبدیل کنید.
           </p>
         </div>
         <div className='flex gap-2'>
-          <Button onClick={() => runSearch(0)} disabled={searchMutation.isPending}>
+          <Button
+            onClick={() => runSearch(0)}
+            disabled={searchMutation.isPending}
+          >
             <Search className='size-4' />
             {searchMutation.isPending ? 'در حال جستجو' : 'جستجو'}
           </Button>
@@ -696,13 +698,18 @@ export function SetadSearchPage() {
                     <div className='flex gap-2'>
                       <Input
                         value={keywordDraft}
-                        onChange={(event) => setKeywordDraft(event.target.value)}
+                        onChange={(event) =>
+                          setKeywordDraft(event.target.value)
+                        }
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault()
                             setFilters((current) => ({
                               ...current,
-                              keywords: addUnique(current.keywords, keywordDraft),
+                              keywords: addUnique(
+                                current.keywords,
+                                keywordDraft
+                              ),
                             }))
                             setKeywordDraft('')
                           }
@@ -730,7 +737,9 @@ export function SetadSearchPage() {
                     onRemove={(value) =>
                       setFilters((current) => ({
                         ...current,
-                        keywords: current.keywords.filter((item) => item !== value),
+                        keywords: current.keywords.filter(
+                          (item) => item !== value
+                        ),
                       }))
                     }
                   />
@@ -739,7 +748,9 @@ export function SetadSearchPage() {
                     <div className='flex gap-2'>
                       <Input
                         value={excludedDraft}
-                        onChange={(event) => setExcludedDraft(event.target.value)}
+                        onChange={(event) =>
+                          setExcludedDraft(event.target.value)
+                        }
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault()
@@ -800,7 +811,7 @@ export function SetadSearchPage() {
                     <span className='block text-sm font-medium'>
                       سامانه و نوع معامله
                     </span>
-                    <span className='text-muted-foreground block text-xs'>
+                    <span className='block text-xs text-muted-foreground'>
                       {filters.boardCodes.length || filters.tagCodes.length
                         ? `${formatNumber(filters.boardCodes.length)} سامانه، ${formatNumber(filters.tagCodes.length)} نوع`
                         : 'همه سامانه‌ها'}
@@ -815,8 +826,10 @@ export function SetadSearchPage() {
                   onClick={() => openSelector('organization')}
                 >
                   <span>
-                    <span className='block text-sm font-medium'>دستگاه اجرایی</span>
-                    <span className='text-muted-foreground block text-xs'>
+                    <span className='block text-sm font-medium'>
+                      دستگاه اجرایی
+                    </span>
+                    <span className='block text-xs text-muted-foreground'>
                       {labeledSummary(
                         filters.selectedOrganization,
                         lookupLabels,
@@ -833,8 +846,10 @@ export function SetadSearchPage() {
                   onClick={() => openSelector('category')}
                 >
                   <span>
-                    <span className='block text-sm font-medium'>دسته‌بندی کالا</span>
-                    <span className='text-muted-foreground block text-xs'>
+                    <span className='block text-sm font-medium'>
+                      دسته‌بندی کالا
+                    </span>
+                    <span className='block text-xs text-muted-foreground'>
                       {labeledSummary(
                         filters.selectedCategory,
                         lookupLabels,
@@ -854,8 +869,12 @@ export function SetadSearchPage() {
                     <span className='block text-sm font-medium'>
                       سازمان‌های مستثنی
                     </span>
-                    <span className='text-muted-foreground block text-xs'>
-                      {labeledSummary(filters.notOrgId, lookupLabels, 'بدون استثنا')}
+                    <span className='block text-xs text-muted-foreground'>
+                      {labeledSummary(
+                        filters.notOrgId,
+                        lookupLabels,
+                        'بدون استثنا'
+                      )}
                     </span>
                   </span>
                   <Plus className='size-4' />
@@ -882,7 +901,7 @@ export function SetadSearchPage() {
                   </select>
                 </Field>
                 <Field label='تعداد فیلترهای فعال'>
-                  <div className='text-muted-foreground flex h-9 items-center rounded-md border px-3 text-sm'>
+                  <div className='flex h-9 items-center rounded-md border px-3 text-sm text-muted-foreground'>
                     {formatNumber(activeLabels.length)}
                   </div>
                 </Field>
@@ -897,7 +916,7 @@ export function SetadSearchPage() {
                   ))}
                 </div>
               ) : (
-                <p className='text-muted-foreground text-sm'>
+                <p className='text-sm text-muted-foreground'>
                   هنوز هیچ محدودیتی روی جستجو اعمال نشده است.
                 </p>
               )}
@@ -997,7 +1016,7 @@ export function SetadSearchPage() {
                 <div className='flex items-end justify-between gap-3 rounded-md border p-3'>
                   <div>
                     <Label>تاریخچه پیشنهاد مزایده</Label>
-                    <p className='text-muted-foreground mt-1 text-xs'>
+                    <p className='mt-1 text-xs text-muted-foreground'>
                       برای مزایده‌ها پیشنهادها هم بررسی شوند.
                     </p>
                   </div>
@@ -1011,8 +1030,9 @@ export function SetadSearchPage() {
                 <div className='flex items-start justify-between gap-3'>
                   <div>
                     <Label>اعلان Rubika</Label>
-                    <p className='text-muted-foreground mt-1 text-xs leading-5'>
-                      baseline اولیه و بروزرسانی‌های بعدی برای مقصدهای انتخاب‌شده ارسال شوند.
+                    <p className='mt-1 text-xs leading-5 text-muted-foreground'>
+                      baseline اولیه و بروزرسانی‌های بعدی برای مقصدهای
+                      انتخاب‌شده ارسال شوند.
                     </p>
                   </div>
                   <Switch
@@ -1023,11 +1043,11 @@ export function SetadSearchPage() {
                 {notifyRubika ? (
                   <div className='mt-3 space-y-2'>
                     {recipientsQuery.isLoading ? (
-                      <p className='text-muted-foreground text-xs'>
+                      <p className='text-xs text-muted-foreground'>
                         در حال خواندن مقصدها...
                       </p>
                     ) : recipientsQuery.isError ? (
-                      <p className='text-muted-foreground text-xs'>
+                      <p className='text-xs text-muted-foreground'>
                         مقصدها در دسترس نیستند.
                       </p>
                     ) : enabledRecipients.length ? (
@@ -1037,7 +1057,9 @@ export function SetadSearchPage() {
                           className='flex items-center gap-2 rounded-md border px-3 py-2 text-sm'
                         >
                           <Checkbox
-                            checked={selectedRecipientIds.includes(recipient.id)}
+                            checked={selectedRecipientIds.includes(
+                              recipient.id
+                            )}
                             onCheckedChange={() => toggleRecipient(recipient)}
                           />
                           <span className='flex-1'>{recipient.name}</span>
@@ -1048,7 +1070,7 @@ export function SetadSearchPage() {
                         </label>
                       ))
                     ) : (
-                      <p className='text-muted-foreground text-xs'>
+                      <p className='text-xs text-muted-foreground'>
                         مقصد فعالی ثبت نشده است.
                       </p>
                     )}
@@ -1113,7 +1135,7 @@ export function SetadSearchPage() {
           </CardHeader>
           <CardContent className='space-y-4'>
             {searchMutation.isPending ? (
-              <div className='text-muted-foreground rounded-md border p-5 text-sm'>
+              <div className='rounded-md border p-5 text-sm text-muted-foreground'>
                 در حال دریافت داده از Setad...
               </div>
             ) : (
@@ -1130,7 +1152,7 @@ export function SetadSearchPage() {
               </Alert>
             ) : null}
             {results ? (
-              <div className='text-muted-foreground text-xs'>
+              <div className='text-xs text-muted-foreground'>
                 صفحه {formatNumber(results.page + 1)} از{' '}
                 {formatNumber(results.total_pages)}
               </div>
@@ -1139,8 +1161,14 @@ export function SetadSearchPage() {
         </Card>
       </div>
 
-      <Dialog open={selectedListing !== null} onOpenChange={(open) => !open && closeListing()}>
-        <DialogContent className='max-h-[88vh] overflow-y-auto sm:max-w-4xl' dir='rtl'>
+      <Dialog
+        open={selectedListing !== null}
+        onOpenChange={(open) => !open && closeListing()}
+      >
+        <DialogContent
+          className='max-h-[88vh] overflow-y-auto sm:max-w-4xl'
+          dir='rtl'
+        >
           {selectedListing ? (
             <>
               <DialogHeader>
@@ -1149,7 +1177,9 @@ export function SetadSearchPage() {
                 </DialogTitle>
                 <DialogDescription>
                   {boardLabel(selectedListing.board_code)} /{' '}
-                  {displayValue(selectedListing.trade_number || selectedListing.party_number)}
+                  {displayValue(
+                    selectedListing.trade_number || selectedListing.party_number
+                  )}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1171,11 +1201,14 @@ export function SetadSearchPage() {
                       ['مهلت اسناد', selectedListing.document_deadline],
                       ['مبلغ پایه', formatMoney(selectedListing.price)],
                     ].map(([label, value]) => (
-                      <div key={label} className='rounded-md border p-3 text-sm'>
-                        <div className='text-muted-foreground mb-1 text-xs'>
+                      <div
+                        key={label}
+                        className='rounded-md border p-3 text-sm'
+                      >
+                        <div className='mb-1 text-xs text-muted-foreground'>
                           {label}
                         </div>
-                        <div className='font-medium leading-6'>
+                        <div className='leading-6 font-medium'>
                           {displayValue(value)}
                         </div>
                       </div>
@@ -1183,9 +1216,12 @@ export function SetadSearchPage() {
                   </div>
 
                   <div className='rounded-md border p-3 text-sm'>
-                    <div className='text-muted-foreground mb-1 text-xs'>شرح</div>
+                    <div className='mb-1 text-xs text-muted-foreground'>
+                      شرح
+                    </div>
                     <p className='leading-7'>
-                      {selectedListing.description || 'شرح جداگانه‌ای ثبت نشده است.'}
+                      {selectedListing.description ||
+                        'شرح جداگانه‌ای ثبت نشده است.'}
                     </p>
                   </div>
 
@@ -1253,7 +1289,7 @@ export function SetadSearchPage() {
                       ) : null}
 
                       {!offers.length && !offerMutation.isPending ? (
-                        <div className='text-muted-foreground rounded-md border p-3 text-sm leading-6'>
+                        <div className='rounded-md border p-3 text-sm leading-6 text-muted-foreground'>
                           هنوز پیشنهادی در این پنل خوانده نشده است.
                         </div>
                       ) : null}
@@ -1269,7 +1305,7 @@ export function SetadSearchPage() {
                               رتبه {displayValue(offer.rank)}
                             </Badge>
                           </div>
-                          <div className='text-muted-foreground mt-2 space-y-1'>
+                          <div className='mt-2 space-y-1 text-muted-foreground'>
                             <div>مبلغ: {formatMoney(offer.amount)}</div>
                             <div>وضعیت: {displayValue(offer.status)}</div>
                             <div>ارسال: {displayValue(offer.submitted_at)}</div>
@@ -1285,8 +1321,14 @@ export function SetadSearchPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={selectorKind !== null} onOpenChange={(open) => !open && closeSelector()}>
-        <DialogContent className='max-h-[86vh] overflow-hidden sm:max-w-3xl' dir='rtl'>
+      <Dialog
+        open={selectorKind !== null}
+        onOpenChange={(open) => !open && closeSelector()}
+      >
+        <DialogContent
+          className='max-h-[86vh] overflow-hidden sm:max-w-3xl'
+          dir='rtl'
+        >
           <DialogHeader>
             <DialogTitle>{selectorTitle}</DialogTitle>
             <DialogDescription>
@@ -1313,7 +1355,7 @@ export function SetadSearchPage() {
                         {board.children.map((tagId) => (
                           <label
                             key={tagId}
-                            className='text-muted-foreground flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm'
+                            className='flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground'
                           >
                             <Checkbox
                               checked={filters.tagCodes.includes(tagId)}
@@ -1340,7 +1382,7 @@ export function SetadSearchPage() {
               />
               <div className='max-h-[58vh] space-y-2 overflow-y-auto pr-1'>
                 {selectorLoading ? (
-                  <div className='text-muted-foreground rounded-md border p-4 text-sm'>
+                  <div className='rounded-md border p-4 text-sm text-muted-foreground'>
                     در حال دریافت گزینه‌ها...
                   </div>
                 ) : null}
@@ -1355,7 +1397,7 @@ export function SetadSearchPage() {
                   </Alert>
                 ) : null}
                 {!selectorLoading && !selectorError && !remoteItems.length ? (
-                  <div className='text-muted-foreground rounded-md border p-4 text-sm'>
+                  <div className='rounded-md border p-4 text-sm text-muted-foreground'>
                     گزینه‌ای پیدا نشد.
                   </div>
                 ) : null}
@@ -1386,8 +1428,10 @@ export function SetadSearchPage() {
                         }
                       />
                       <span>
-                        <span className='block font-medium'>{lookupLabel(item)}</span>
-                        <span className='text-muted-foreground block text-xs'>
+                        <span className='block font-medium'>
+                          {lookupLabel(item)}
+                        </span>
+                        <span className='block text-xs text-muted-foreground'>
                           شناسه {id}
                         </span>
                       </span>

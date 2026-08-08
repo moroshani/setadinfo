@@ -8,8 +8,9 @@ is explicitly marked as supported.
 ## Reporting A Vulnerability
 
 Do not open a public issue for secrets, authentication bypasses, deployment
-keys, or notification-token exposure. Report privately to the maintainer listed
-in the public repository profile.
+keys, or notification-token exposure. Use GitHub's
+[private vulnerability reporting](https://github.com/moroshani/setadinfo/security/advisories/new)
+to contact the maintainer confidentially.
 
 Please include:
 

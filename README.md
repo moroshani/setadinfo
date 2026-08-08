@@ -1,5 +1,11 @@
 # SetadInfo
 
+[![CI](https://github.com/moroshani/setadinfo/actions/workflows/ci.yml/badge.svg)](https://github.com/moroshani/setadinfo/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/moroshani/setadinfo/actions/workflows/codeql.yml/badge.svg)](https://github.com/moroshani/setadinfo/actions/workflows/codeql.yml)
+
+> وضعیت: پروژه در حال توسعه فعال است و هنوز کاربر خارجی گزارش‌شده‌ای ندارد.
+> مخزن برای بازبینی، آزمایش و مشارکت عمومی باز است.
+
 SetadInfo یک ورک‌بنچ فارسی و راست‌به‌چپ برای جستجو، پایش و تحلیل آگهی‌های عمومی
 سامانه ستاد است. هدف پروژه این است که کاربر به جای بازخوانی دستی آگهی‌ها، یک
 جریان کاری روشن داشته باشد: جستجوی دقیق، ساخت پایش، ثبت baseline اولیه، مشاهده
@@ -118,7 +124,8 @@ PYTHONPATH=backend uvicorn app.main:app --host 127.0.0.1 --port 8765
 
 ```bash
 cd frontend-workbench
-pnpm install
+corepack enable
+pnpm install --frozen-lockfile
 pnpm dev --host 127.0.0.1 --port 5180
 ```
 
@@ -147,7 +154,10 @@ docker compose up -d --build
 ```bash
 PYTHONPATH=backend python -m unittest discover -s backend/tests -v
 cd frontend-workbench
+pnpm audit --audit-level=high
 pnpm lint
+pnpm exec playwright install chromium
+pnpm test
 pnpm build
 ```
 

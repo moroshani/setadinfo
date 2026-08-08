@@ -21,44 +21,6 @@ import {
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
-import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   createRubikaRecipient,
   deleteTask,
@@ -87,6 +49,49 @@ import {
   updateRubikaRecipient,
   type Offer,
 } from '@/lib/setad-api'
+import {
+  FALLBACK_BOARD_OPTIONS,
+  boardLabel,
+  boardValue,
+} from '@/lib/setad-boards'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 function formatNumber(value: number | null | undefined) {
   return new Intl.NumberFormat('fa-IR').format(value ?? 0)
@@ -105,19 +110,6 @@ function formatDate(value: string | null | undefined) {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date)
-}
-
-function boardLabel(code: number | null | undefined) {
-  if (code === 1) return 'خرید'
-  if (code === 2) return 'مناقصه'
-  if (code === 3) return 'مزایده'
-  return 'عمومی'
-}
-
-function boardValue(value: string) {
-  if (value === '1') return 1
-  if (value === '2') return 2
-  return null
 }
 
 function eventLabel(type: string) {
@@ -271,7 +263,7 @@ function ApiState({
   if (isLoading) {
     return (
       <Card>
-        <CardContent className='text-muted-foreground py-8 text-sm'>
+        <CardContent className='py-8 text-sm text-muted-foreground'>
           {loadingText}
         </CardContent>
       </Card>
@@ -286,15 +278,17 @@ function ApiState({
       ? 'برای دیدن داده‌های واقعی باید وارد حساب SetadInfo شوید.'
       : status === 502
         ? 'بک‌اند محلی یا سرویس API در دسترس نیست.'
-      : error instanceof Error
-        ? error.message
-        : 'اتصال به API برقرار نشد.'
+        : error instanceof Error
+          ? error.message
+          : 'اتصال به API برقرار نشد.'
 
   return (
     <Card>
       <CardContent className='py-8'>
         <div className='text-sm font-medium'>داده زنده در دسترس نیست</div>
-        <p className='text-muted-foreground mt-2 text-sm leading-6'>{message}</p>
+        <p className='mt-2 text-sm leading-6 text-muted-foreground'>
+          {message}
+        </p>
       </CardContent>
     </Card>
   )
@@ -302,8 +296,8 @@ function ApiState({
 
 function EmptyState({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className='text-muted-foreground rounded-md border p-4 text-sm leading-6'>
-      <strong className='text-foreground block'>{title}</strong>
+    <div className='rounded-md border p-4 text-sm leading-6 text-muted-foreground'>
+      <strong className='block text-foreground'>{title}</strong>
       {detail}
     </div>
   )
@@ -326,17 +320,17 @@ function UpdatesList({
   }
 
   return (
-    <div className='grid gap-3 xl:grid-cols-2'>
+    <div className='grid min-w-0 gap-3 xl:grid-cols-2'>
       {items.map((item) => (
         <div
           key={item.id}
-          className='rounded-md border p-4 text-sm data-[severity=warning]:border-amber-300 data-[severity=warning]:bg-amber-50/40 dark:data-[severity=warning]:bg-amber-950/10'
+          className='min-w-0 rounded-md border p-4 text-sm data-[severity=warning]:border-amber-300 data-[severity=warning]:bg-amber-50/40 dark:data-[severity=warning]:bg-amber-950/10'
           data-severity={item.severity}
         >
           <div className='mb-2 flex items-start justify-between gap-3'>
             <div>
               <strong className='leading-6'>{item.title}</strong>
-              <p className='text-muted-foreground mt-1 leading-6'>
+              <p className='mt-1 leading-6 text-muted-foreground'>
                 {item.summary || 'بدون توضیح تکمیلی'}
               </p>
             </div>
@@ -347,15 +341,26 @@ function UpdatesList({
               ['شماره', eventListingPayload(item).trade_number],
               ['عنوان', eventListingPayload(item).title],
               ['سازمان', eventListingPayload(item).organization],
-              ['محل', [eventListingPayload(item).province, eventListingPayload(item).city].filter(Boolean).join(' / ')],
+              [
+                'محل',
+                [
+                  eventListingPayload(item).province,
+                  eventListingPayload(item).city,
+                ]
+                  .filter(Boolean)
+                  .join(' / '),
+              ],
               ['مهلت ارسال', eventListingPayload(item).send_deadline],
-              ['قیمت پایه', formatMoney(Number(eventListingPayload(item).price) || null)],
+              [
+                'قیمت پایه',
+                formatMoney(Number(eventListingPayload(item).price) || null),
+              ],
             ].map(([label, value]) => (
               <div key={label as string} className='min-w-0'>
-                <span className='text-muted-foreground'>
-                  {String(label)}:{' '}
+                <span className='text-muted-foreground'>{String(label)}: </span>
+                <span className='break-words'>
+                  {String(value || 'ثبت نشده')}
                 </span>
-                <span className='break-words'>{String(value || 'ثبت نشده')}</span>
               </div>
             ))}
             {eventOfferPayload(item) ? (
@@ -369,7 +374,9 @@ function UpdatesList({
                 <div className='min-w-0'>
                   <span className='text-muted-foreground'>مبلغ پیشنهاد: </span>
                   <span>
-                    {formatMoney(Number(eventOfferPayload(item)?.amount) || null)}
+                    {formatMoney(
+                      Number(eventOfferPayload(item)?.amount) || null
+                    )}
                   </span>
                 </div>
               </>
@@ -386,7 +393,7 @@ function UpdatesList({
                       : { after: value }
                   return (
                     <div key={field} className='min-w-0'>
-                      <span className='text-muted-foreground font-mono'>
+                      <span className='font-mono text-muted-foreground'>
                         {field}:{' '}
                       </span>
                       <span className='break-words'>
@@ -400,7 +407,7 @@ function UpdatesList({
               </div>
             </div>
           ) : null}
-          <div className='text-muted-foreground mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs'>
+          <div className='mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground'>
             <span>پایش: {item.task_id}</span>
             <span>اجرا: {formatNumber(item.run_id)}</span>
             <span>{formatDate(item.created_at)}</span>
@@ -448,7 +455,7 @@ function MonitorTable({
   }
 
   return (
-    <Table>
+    <Table className='min-w-[42rem]'>
       <TableHeader>
         <TableRow>
           <TableHead>نام</TableHead>
@@ -611,8 +618,10 @@ function ListingTable({
       <TableBody>
         {listings.map((listing) => (
           <TableRow key={listing.id}>
-            <TableCell>{listing.trade_number || listing.party_number}</TableCell>
-            <TableCell className='max-w-[28rem] whitespace-normal font-medium'>
+            <TableCell>
+              {listing.trade_number || listing.party_number}
+            </TableCell>
+            <TableCell className='max-w-[28rem] font-medium whitespace-normal'>
               {listing.title || 'بدون عنوان'}
             </TableCell>
             <TableCell>{boardLabel(listing.board_code)}</TableCell>
@@ -747,8 +756,8 @@ function ListingDetailDialog({
               <div className='grid gap-3 md:grid-cols-2'>
                 {details.map(([label, value]) => (
                   <div key={label} className='rounded-md border p-3'>
-                    <div className='text-muted-foreground text-xs'>{label}</div>
-                    <div className='mt-1 break-words text-sm font-medium'>
+                    <div className='text-xs text-muted-foreground'>{label}</div>
+                    <div className='mt-1 text-sm font-medium break-words'>
                       {value || 'ثبت نشده'}
                     </div>
                   </div>
@@ -775,7 +784,7 @@ function ListingDetailDialog({
               <div className='grid gap-2 md:grid-cols-2'>
                 {rawEntries(listing.raw).map(([key, value]) => (
                   <div key={key} className='rounded-md border p-3 text-xs'>
-                    <div className='text-muted-foreground font-mono'>{key}</div>
+                    <div className='font-mono text-muted-foreground'>{key}</div>
                     <div className='mt-1 break-words'>
                       {typeof value === 'object'
                         ? JSON.stringify(value)
@@ -819,7 +828,11 @@ export function SetadOverview() {
     { label: 'پایش فعال', value: stats?.enabled_tasks ?? 0, icon: ListChecks },
     { label: 'کل پایش‌ها', value: stats?.total_tasks ?? 0, icon: Bell },
     { label: 'آگهی ذخیره‌شده', value: stats?.total_listings ?? 0, icon: Gavel },
-    { label: 'اجرای ثبت‌شده', value: stats?.total_runs ?? 0, icon: CheckCircle2 },
+    {
+      label: 'اجرای ثبت‌شده',
+      value: stats?.total_runs ?? 0,
+      icon: CheckCircle2,
+    },
   ]
   const queues = [
     {
@@ -870,11 +883,11 @@ export function SetadOverview() {
       <section className='border-b pb-5'>
         <div className='flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between'>
           <div className='max-w-3xl'>
-            <p className='text-muted-foreground text-sm'>ورک‌بنچ SetadInfo</p>
+            <p className='text-sm text-muted-foreground'>ورک‌بنچ SetadInfo</p>
             <h1 className='mt-1 text-2xl font-semibold tracking-normal md:text-3xl'>
               کنترل روزانه فرصت‌ها، پایش‌ها و تغییرات Setad
             </h1>
-            <p className='text-muted-foreground mt-3 text-sm leading-7'>
+            <p className='mt-3 text-sm leading-7 text-muted-foreground'>
               از اینجا وضعیت عملیاتی را ببینید، فیلتر جدید بسازید، تغییرهای تازه
               را triage کنید و مزایده‌های دارای پیشنهاد را جدا بررسی کنید.
             </p>
@@ -906,11 +919,11 @@ export function SetadOverview() {
           <Card key={label} className='rounded-md'>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium'>{label}</CardTitle>
-              <Icon className='text-muted-foreground size-4' />
+              <Icon className='size-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold'>{formatNumber(value)}</div>
-              <p className='text-muted-foreground text-xs'>
+              <p className='text-xs text-muted-foreground'>
                 آخرین اجرا: {formatDate(stats?.last_run)}
               </p>
             </CardContent>
@@ -924,12 +937,14 @@ export function SetadOverview() {
             <CardHeader className='space-y-0 pb-2'>
               <div className='flex items-center justify-between gap-3'>
                 <CardTitle className='text-sm font-medium'>{title}</CardTitle>
-                <Icon className='text-muted-foreground size-4' />
+                <Icon className='size-4 text-muted-foreground' />
               </div>
             </CardHeader>
             <CardContent className='space-y-3'>
-              <div className='text-2xl font-semibold'>{formatNumber(value)}</div>
-              <p className='text-muted-foreground min-h-10 text-xs leading-5'>
+              <div className='text-2xl font-semibold'>
+                {formatNumber(value)}
+              </div>
+              <p className='min-h-10 text-xs leading-5 text-muted-foreground'>
                 {detail}
               </p>
               <Button variant='outline' size='sm' asChild>
@@ -945,40 +960,40 @@ export function SetadOverview() {
           <Link
             key={title}
             to={href}
-            className='focus-visible:ring-ring rounded-md border p-4 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:outline-none'
+            className='rounded-md border p-4 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
           >
             <div className='flex items-center gap-2'>
-              <Icon className='text-muted-foreground size-4' />
+              <Icon className='size-4 text-muted-foreground' />
               <span className='font-medium'>{title}</span>
             </div>
-            <p className='text-muted-foreground mt-2 text-xs leading-6'>
+            <p className='mt-2 text-xs leading-6 text-muted-foreground'>
               {detail}
             </p>
           </Link>
         ))}
       </div>
 
-      <div className='grid gap-4 xl:grid-cols-[1.15fr_0.85fr]'>
-        <Card className='rounded-md'>
+      <div className='grid min-w-0 grid-cols-1 gap-4'>
+        <Card className='min-w-0 rounded-md'>
           <CardHeader>
             <CardTitle>پایش‌های مهم</CardTitle>
             <CardDescription>
               پایش‌ها را از نظر baseline، اجرای بعدی و فعال بودن کنترل کنید.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className='min-w-0'>
             <MonitorTable tasks={tasks} />
           </CardContent>
         </Card>
 
-        <Card className='rounded-md'>
+        <Card className='min-w-0 rounded-md'>
           <CardHeader>
             <CardTitle>کارت‌های بروزرسانی</CardTitle>
             <CardDescription>
               مدل جدید اعلان: خلاصه اولیه، سپس فقط افزوده/حذف/تغییر.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className='min-w-0'>
             <ApiState
               error={updatesQuery.error}
               isLoading={updatesQuery.isLoading}
@@ -997,7 +1012,8 @@ export function SetadOverview() {
           <strong>{latestUpdate.title}</strong>
           <span className='text-muted-foreground'>
             {' '}
-            ({eventLabel(latestUpdate.event_type)}، {formatDate(latestUpdate.created_at)})
+            ({eventLabel(latestUpdate.event_type)}،{' '}
+            {formatDate(latestUpdate.created_at)})
           </span>
         </div>
       ) : null}
@@ -1047,7 +1063,9 @@ export function SetadMonitorsPage() {
   })
 
   const isBusy =
-    toggleMutation.isPending || runMutation.isPending || deleteMutation.isPending
+    toggleMutation.isPending ||
+    runMutation.isPending ||
+    deleteMutation.isPending
 
   return (
     <SetadPageShell
@@ -1062,7 +1080,8 @@ export function SetadMonitorsPage() {
             <div>
               <CardTitle>همه پایش‌ها</CardTitle>
               <CardDescription>
-                اجرای دستی فقط پایش را در صف worker قرار می‌دهد؛ نتیجه در صفحه اجراها دیده می‌شود.
+                اجرای دستی فقط پایش را در صف worker قرار می‌دهد؛ نتیجه در صفحه
+                اجراها دیده می‌شود.
               </CardDescription>
             </div>
             <Button asChild>
@@ -1110,7 +1129,9 @@ export function SetadMonitorsPage() {
 
 export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
   const queryClient = useQueryClient()
-  const [selectedListingId, setSelectedListingId] = useState<number | null>(null)
+  const [selectedListingId, setSelectedListingId] = useState<number | null>(
+    null
+  )
   const tasksQuery = useQuery({ queryKey: ['setad-tasks'], queryFn: getTasks })
   const task = tasksQuery.data?.items.find((item) => item.id === taskId)
   const runsQuery = useQuery({
@@ -1131,7 +1152,9 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
       queryClient.invalidateQueries({ queryKey: ['setad-tasks'] }),
       queryClient.invalidateQueries({ queryKey: ['setad-dashboard'] }),
       queryClient.invalidateQueries({ queryKey: ['setad-runs', taskId] }),
-      queryClient.invalidateQueries({ queryKey: ['setad-notifications', taskId] }),
+      queryClient.invalidateQueries({
+        queryKey: ['setad-notifications', taskId],
+      }),
       queryClient.invalidateQueries({ queryKey: ['setad-listings', taskId] }),
     ])
   }
@@ -1225,30 +1248,38 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
             </CardHeader>
             <CardContent className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
               <div className='rounded-md border p-3'>
-                <div className='text-muted-foreground text-xs'>وضعیت</div>
+                <div className='text-xs text-muted-foreground'>وضعیت</div>
                 <Badge className='mt-2' variant={statusVariant(task.enabled)}>
                   {task.enabled ? 'فعال' : 'غیرفعال'}
                 </Badge>
               </div>
               <div className='rounded-md border p-3'>
-                <div className='text-muted-foreground text-xs'>baseline</div>
+                <div className='text-xs text-muted-foreground'>baseline</div>
                 <div className='mt-2 text-sm font-medium'>
                   {formatDate(task.baseline_notified_at)}
                 </div>
               </div>
               <div className='rounded-md border p-3'>
-                <div className='text-muted-foreground text-xs'>اجرای بعدی</div>
+                <div className='text-xs text-muted-foreground'>اجرای بعدی</div>
                 <div className='mt-2 text-sm font-medium'>
                   {formatDate(task.next_run_at)}
                 </div>
               </div>
               <div className='rounded-md border p-3'>
-                <div className='text-muted-foreground text-xs'>اعلان‌ها</div>
+                <div className='text-xs text-muted-foreground'>اعلان‌ها</div>
                 <div className='mt-2 flex flex-wrap gap-1'>
-                  {task.notify_initial ? <Badge variant='outline'>baseline</Badge> : null}
-                  {task.notify_new_listings ? <Badge variant='outline'>جدید</Badge> : null}
-                  {task.notify_listing_changes ? <Badge variant='outline'>تغییر</Badge> : null}
-                  {task.notify_offer_changes ? <Badge variant='outline'>پیشنهاد</Badge> : null}
+                  {task.notify_initial ? (
+                    <Badge variant='outline'>baseline</Badge>
+                  ) : null}
+                  {task.notify_new_listings ? (
+                    <Badge variant='outline'>جدید</Badge>
+                  ) : null}
+                  {task.notify_listing_changes ? (
+                    <Badge variant='outline'>تغییر</Badge>
+                  ) : null}
+                  {task.notify_offer_changes ? (
+                    <Badge variant='outline'>پیشنهاد</Badge>
+                  ) : null}
                 </div>
               </div>
             </CardContent>
@@ -1259,10 +1290,12 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
               <Card key={label}>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                   <CardTitle className='text-sm font-medium'>{label}</CardTitle>
-                  <Icon className='text-muted-foreground size-4' />
+                  <Icon className='size-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>{formatNumber(value)}</div>
+                  <div className='text-2xl font-bold'>
+                    {formatNumber(value)}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -1299,7 +1332,10 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
               ) : null}
             </TabsContent>
             <TabsContent value='runs' className='pt-4'>
-              <ApiState error={runsQuery.error} isLoading={runsQuery.isLoading} />
+              <ApiState
+                error={runsQuery.error}
+                isLoading={runsQuery.isLoading}
+              />
               {!runsQuery.isLoading && !runsQuery.error ? (
                 <RunTable runs={runsQuery.data?.items ?? []} />
               ) : null}
@@ -1321,7 +1357,9 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
 export function SetadUpdatesPage() {
   const [selectedType, setSelectedType] = useState('all')
   const [searchText, setSearchText] = useState('')
-  const [selectedListingId, setSelectedListingId] = useState<number | null>(null)
+  const [selectedListingId, setSelectedListingId] = useState<number | null>(
+    null
+  )
   const query = useQuery({
     queryKey: ['setad-notifications', 80],
     queryFn: () => getNotifications(80),
@@ -1329,7 +1367,8 @@ export function SetadUpdatesPage() {
   const filteredItems = useMemo(() => {
     const text = searchText.trim()
     return (query.data?.items ?? []).filter((item) => {
-      const typeMatches = selectedType === 'all' || item.event_type === selectedType
+      const typeMatches =
+        selectedType === 'all' || item.event_type === selectedType
       if (!typeMatches) return false
       if (!text) return true
       return `${item.title} ${item.summary} ${item.task_id} ${JSON.stringify(item.payload)}`
@@ -1472,7 +1511,9 @@ export function SetadOpportunitiesPage() {
   const [submittedSearch, setSubmittedSearch] = useState('')
   const [boardFilter, setBoardFilter] = useState('all')
   const [page, setPage] = useState(0)
-  const [selectedListingId, setSelectedListingId] = useState<number | null>(null)
+  const [selectedListingId, setSelectedListingId] = useState<number | null>(
+    null
+  )
   const query = useQuery({
     queryKey: ['setad-listings', submittedSearch, boardFilter, page],
     queryFn: () =>
@@ -1525,8 +1566,13 @@ export function SetadOpportunitiesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>همه انواع</SelectItem>
-              <SelectItem value='1'>مناقصه</SelectItem>
-              <SelectItem value='2'>مزایده</SelectItem>
+              {Object.entries(FALLBACK_BOARD_OPTIONS).map(
+                ([value, { label }]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                )
+              )}
             </SelectContent>
           </Select>
           <Button onClick={submitSearch}>
@@ -1558,7 +1604,7 @@ export function SetadOpportunitiesPage() {
               >
                 قبلی
               </Button>
-              <span className='text-muted-foreground text-sm'>
+              <span className='text-sm text-muted-foreground'>
                 {formatNumber(page + 1)} / {formatNumber(totalPages)}
               </span>
               <Button
@@ -1601,9 +1647,7 @@ export function SetadRecipientsPage() {
   const [form, setForm] = useState<RecipientFormState>(() =>
     emptyRecipientForm()
   )
-  const [testText, setTestText] = useState(
-    'SetadInfo: پیام آزمایشی مقصد اعلان'
-  )
+  const [testText, setTestText] = useState('SetadInfo: پیام آزمایشی مقصد اعلان')
 
   const recipients = useMemo(
     () =>
@@ -1693,7 +1737,9 @@ export function SetadRecipientsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Badge variant={statusQuery.data?.configured ? 'default' : 'secondary'}>
+            <Badge
+              variant={statusQuery.data?.configured ? 'default' : 'secondary'}
+            >
               {statusQuery.data?.configured ? 'آماده ارسال' : 'نیازمند تنظیم'}
             </Badge>
           </CardContent>
@@ -1703,7 +1749,8 @@ export function SetadRecipientsPage() {
           <CardHeader>
             <CardTitle>مقصد پیش‌فرض</CardTitle>
             <CardDescription>
-              مقصد پیش‌فرض فقط fallback است؛ مسیر درست این است که هر پایش مقصدهای خودش را داشته باشد.
+              مقصد پیش‌فرض فقط fallback است؛ مسیر درست این است که هر پایش
+              مقصدهای خودش را داشته باشد.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1725,7 +1772,8 @@ export function SetadRecipientsPage() {
           <CardHeader>
             <CardTitle>رفتار اعلان</CardTitle>
             <CardDescription>
-              مقصدها پیام baseline اولیه و سپس فقط کارت‌های تغییرات معنی‌دار را دریافت می‌کنند.
+              مقصدها پیام baseline اولیه و سپس فقط کارت‌های تغییرات معنی‌دار را
+              دریافت می‌کنند.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1739,7 +1787,8 @@ export function SetadRecipientsPage() {
           <div>
             <CardTitle>مقصدهای ثبت‌شده</CardTitle>
             <CardDescription>
-              کاربر، گروه یا کانالی که قبلا با بات تعامل داشته و chat ID آن کشف یا ثبت شده است.
+              کاربر، گروه یا کانالی که قبلا با بات تعامل داشته و chat ID آن کشف
+              یا ثبت شده است.
             </CardDescription>
           </div>
           <div className='flex gap-2'>
@@ -1894,13 +1943,13 @@ export function SetadRecipientsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(recipientTypeLabels) as RubikaRecipientType[]).map(
-                    (type) => (
-                      <SelectItem key={type} value={type}>
-                        {recipientTypeLabels[type]}
-                      </SelectItem>
-                    )
-                  )}
+                  {(
+                    Object.keys(recipientTypeLabels) as RubikaRecipientType[]
+                  ).map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {recipientTypeLabels[type]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1989,13 +2038,13 @@ function SetadPageShell({
     <div className='space-y-6' dir='rtl'>
       <div className='flex items-start justify-between gap-4'>
         <div>
-          <p className='text-muted-foreground text-sm'>ورک‌بنچ SetadInfo</p>
+          <p className='text-sm text-muted-foreground'>ورک‌بنچ SetadInfo</p>
           <h1 className='text-2xl font-bold tracking-normal'>{title}</h1>
-          <p className='text-muted-foreground mt-2 max-w-3xl leading-7'>
+          <p className='mt-2 max-w-3xl leading-7 text-muted-foreground'>
             {description}
           </p>
         </div>
-        <div className='bg-primary/10 text-primary rounded-md p-3'>
+        <div className='rounded-md bg-primary/10 p-3 text-primary'>
           <Icon className='size-5' />
         </div>
       </div>
