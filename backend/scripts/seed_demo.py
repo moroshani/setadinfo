@@ -533,7 +533,6 @@ def seed_demo_data(db: Session) -> dict[str, Any]:
 
     return {
         "users": ["demo-operator", "demo-viewer"],
-        "password": DEMO_PASSWORD,
         "tasks": len(DEMO_TASK_IDS),
         "listings": 4,
         "offers": 3,
@@ -559,7 +558,7 @@ def main() -> None:
 
     print("Demo data seeded.")
     print(f"Users: {', '.join(result['users'])}")
-    print(f"Password: {result['password']}")
+    print("Credentials: see docs/demo-data.md")
     print(f"Tasks/Listings/Offers/Events: {result['tasks']}/{result['listings']}/{result['offers']}/{result['events']}")
 
 

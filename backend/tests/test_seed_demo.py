@@ -24,6 +24,7 @@ class DemoSeedTests(TestCase):
 
         self.assertEqual(first["tasks"], 3)
         self.assertEqual(second["events"], 5)
+        self.assertNotIn("password", first)
         self.assertEqual(task_count, 3)
 
     def test_seed_keeps_non_demo_rows(self):
