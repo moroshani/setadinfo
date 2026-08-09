@@ -1,46 +1,52 @@
 # SetadInfo Documentation
 
-This directory is the durable product, architecture, safety, and operations
-memory for SetadInfo. Keep it synchronized with behavior changes in the same
-commit.
+This directory is the durable product and engineering memory for SetadInfo.
 
-## Current State
+## Worktree State On 2026-08-09
 
-- Baseline date: 2026-08-09.
-- Public source branch: `main` at the browser-demo publication line beginning
-  with `e72218a`.
-- Public lab: `https://moroshani.github.io/setadinfo/`.
-- The lab is static, browser-only, synthetic, uses in-memory mutations, and must
-  make no `/api`, Setad, or Rubika request.
-- The full-stack product remains FastAPI, PostgreSQL, Redis, Celery, React,
-  TypeScript, Vite, TanStack Router, and TanStack Query.
-- Last complete published verification: 51 backend tests, 87 frontend tests,
-  fresh SQLite migration, lint, production and demo builds, responsive demo QA,
-  and zero known high-severity frontend audit findings.
-- No tagged SetadInfo source release exists yet.
+- `C:\Projects\setadinfo` contains unpublished notification, delivery,
+  reliability, operations, and frontend redesign work.
+- `safety/local-snapshot-20260809` preserves the complete captured state at
+  `18a20a8` without altering the active checkout.
+- `C:\Projects\setadinfo-reconcile-20260809` contains the release candidate on
+  `integrate/public-main-20260809`, based on public `main` with the local
+  notification/redesign work replayed once.
+- Do not reset, pull, merge, or copy either worktree over the active checkout.
+  Publish and review the release candidate before moving the active checkout.
 
-## Read First
+## Current Public Surface
+
+- Repository: `https://github.com/moroshani/setadinfo`
+- Synthetic lab: `https://moroshani.github.io/setadinfo/`
+- The lab is browser-only, uses synthetic data and in-memory mutations, and has
+  no access to the private production deployment.
+
+## Product And Engineering
 
 - [Architecture](./architecture.md)
 - [Product workflows](./product-workflows.md)
+- [Product redesign plan](./product-redesign-plan.md)
+- [Notification policy](./notification-policy.md)
 - [API contract](./api-contract.md)
-- [Demo data and public lab](./demo-data.md)
+- [Live-search reliability](./live-search-reliability.md)
+- [Demo data](./demo-data.md)
+- [Architecture decisions](./adr/)
+
+## Operations And Release
+
+- [Operations runbook](./operations-runbook.md)
 - [Deployment](./deployment.md)
 - [Migrations](./migrations.md)
-- [Live-search reliability](./live-search-reliability.md)
-- [Public release checklist](./public-release-checklist.md)
-
-## Integrations And Research
-
 - [Rubika behavior](./rubika.md)
 - [Rubika setup](./rubika-setup.md)
+- [Public release checklist](./public-release-checklist.md)
 - [Setad gateway research](./setad-research.md)
 
 ## Maintenance Rules
 
-- Update the API contract when request or response shapes change.
-- Update architecture and deployment docs when service boundaries change.
-- Update demo documentation whenever a route or adapter is added.
-- Use concrete dates and distinguish deployed public behavior from planned work.
-- Never include production credentials, recipient IDs, private screenshots,
-  database dumps, infrastructure addresses, or commercial font files.
+- Keep local unpublished state and deployed public state explicitly separated.
+- Update API, notification, migration, and operations docs with the behavior
+  change that requires them.
+- Use concrete dates for worktree state.
+- Never record production credentials, recipient IDs, private infrastructure,
+  database dumps, or private screenshots.

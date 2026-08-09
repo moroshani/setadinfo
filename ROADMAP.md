@@ -20,25 +20,25 @@
 - Alembic و migration اولیه schema در مخزن اضافه شده است.
 - seed/demo mode محلی برای بازبینی امن UI بدون اتصال به Setad و Rubika اضافه
   شده است.
-- نسخه نمایشی browser-only با داده کاملا ساختگی روی GitHub Pages منتشر شده و
-  verifier آن همه مسیرهای اصلی، جستجو، نبود درخواست API و overflow را در دسکتاپ
-  و موبایل کنترل می‌کند.
 - جریان‌های اصلی محصول برای بازطراحی UI/UX در `docs/product-workflows.md`
   مستند شده‌اند.
-- CI، CodeQL، Dependabot، گزارش خصوصی آسیب‌پذیری و سیاست‌های امنیتی مخزن فعال
-  شده‌اند.
+- نسخه نمایشی عمومی browser-only با داده ساختگی روی GitHub Pages منتشر شده است؛
+  adapter و verifier آن با بازطراحی اعلان در شاخه release candidate ادغام شده
+  است.
+- بازطراحی semantics اعلان، کارت رویداد، delivery attempt و system status روی
+  public `main` در worktree جدا rebase و برای تست و بازبینی آماده شده است.
 
 ## اولویت‌های بعدی
 
-1. ادامه بازطراحی UX/UI فرانت‌اند بر اساس
+1. تکمیل همه gateهای backend، frontend، migration و demo و انتشار شاخه release
+   candidate برای بازبینی.
+2. QA تصویری دسکتاپ و موبایل روی نسخه demo ادغام‌شده.
+3. ادامه بازطراحی UX/UI فرانت‌اند بر اساس
    [FRONTEND_REDESIGN_BRIEF.md](FRONTEND_REDESIGN_BRIEF.md).
-2. آماده‌سازی اولین source release تگ‌شده با مرز نسخه و release notes روشن.
-3. تقسیم bundle فرانت‌اند در سطح route برای حذف هشدار فعلی chunk اصلی، بدون
-   تضعیف تجربه مسیریابی.
-4. سخت‌تر کردن observability production: structured logs، export خطاها و run
+4. آماده‌سازی اولین source release تگ‌شده بعد از تثبیت مرز نسخه.
+5. سخت‌تر کردن observability production: structured logs، export خطاها و run
    failure dashboard.
-5. تولید یا همگام‌سازی خودکار قرارداد API برای کاهش drift میان FastAPI و
-   TypeScript.
+6. مستندسازی و تولید خودکار قرارداد API برای کاهش drift فرانت‌اند و بک‌اند.
 
 ## خط قرمزهای انتشار عمومی
 

@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Bell, ChevronsUpDown, LogOut, Settings, Users } from 'lucide-react'
-import useDialogState from '@/hooks/use-dialog-state'
 import { useAuthStore } from '@/stores/auth-store'
+import useDialogState from '@/hooks/use-dialog-state'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -53,7 +53,9 @@ export function NavUser({ user }: NavUserProps) {
               >
                 <Avatar className='h-8 w-8 rounded-lg'>
                   <AvatarImage src={user.avatar} alt={displayName} />
-                  <AvatarFallback className='rounded-lg'>{fallback}</AvatarFallback>
+                  <AvatarFallback className='rounded-lg'>
+                    {fallback}
+                  </AvatarFallback>
                 </Avatar>
                 <div className='grid flex-1 text-start text-sm leading-tight'>
                   <span className='truncate font-semibold'>{displayName}</span>
@@ -72,10 +74,14 @@ export function NavUser({ user }: NavUserProps) {
                 <div className='flex items-center gap-2 px-1 py-1.5 text-start text-sm'>
                   <Avatar className='h-8 w-8 rounded-lg'>
                     <AvatarImage src={user.avatar} alt={displayName} />
-                    <AvatarFallback className='rounded-lg'>{fallback}</AvatarFallback>
+                    <AvatarFallback className='rounded-lg'>
+                      {fallback}
+                    </AvatarFallback>
                   </Avatar>
                   <div className='grid flex-1 text-start text-sm leading-tight'>
-                    <span className='truncate font-semibold'>{displayName}</span>
+                    <span className='truncate font-semibold'>
+                      {displayName}
+                    </span>
                     <span className='truncate text-xs'>{displayMeta}</span>
                   </div>
                 </div>

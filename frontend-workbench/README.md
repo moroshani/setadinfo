@@ -14,12 +14,15 @@ RTL-first operational workbench.
 - Notification UI built around info-card events: initial baseline, then only
   additions, removals, modifications, and auction offer changes.
 
-## Runtime Modes
+## Runtime Boundary
 
-- Normal development and production builds call the same-origin FastAPI `/api`
-  surface. Browser code never calls Setad or Rubika directly.
-- Public-demo mode uses `src/lib/public-demo-api.ts`, synthetic data, in-memory
-  mutations, and hash routing. It makes no backend or provider request.
+Normal development and production builds call only the same-origin FastAPI
+`/api` surface. Browser code must not call Setad or Rubika directly.
+
+The public repository also has a browser-only synthetic mode deployed at
+`https://moroshani.github.io/setadinfo/`. It uses in-memory synthetic data,
+supports the current notification-card workflow, and must never call a backend,
+Setad, or Rubika endpoint.
 
 ## Commands
 
@@ -31,10 +34,6 @@ pnpm test
 pnpm build
 pnpm verify:demo
 ```
-
-The public lab is deployed at `https://moroshani.github.io/setadinfo/`. See
-`../docs/demo-data.md` for the browser-only safety boundary and the separate
-full-stack seeded-data workflow.
 
 ## Template Attribution
 

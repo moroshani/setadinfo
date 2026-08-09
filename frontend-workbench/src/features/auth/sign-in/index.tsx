@@ -15,12 +15,10 @@ export function SignIn() {
 
   return (
     <AuthLayout>
-      <Card className='max-w-sm gap-4'>
+      <Card className='w-full max-w-sm gap-4'>
         <CardHeader>
           <CardTitle className='text-lg tracking-tight'>ورود</CardTitle>
-          <CardDescription>
-            وارد ورک‌بنچ SetadInfo شوید.
-          </CardDescription>
+          <CardDescription>وارد ورک‌بنچ SetadInfo شوید.</CardDescription>
         </CardHeader>
         <CardContent>
           <UserAuthForm redirectTo={redirect} />

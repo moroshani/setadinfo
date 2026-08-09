@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import useDialogState from '@/hooks/use-dialog-state'
 import { useAuthStore } from '@/stores/auth-store'
+import useDialogState from '@/hooks/use-dialog-state'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -49,19 +49,13 @@ export function ProfileDropdown() {
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link to='/settings'>
-                تنظیمات
-              </Link>
+              <Link to='/settings'>تنظیمات</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to='/users'>
-                کاربران
-              </Link>
+              <Link to='/users'>کاربران</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to='/recipients'>
-                مقصدهای اعلان
-              </Link>
+              <Link to='/recipients'>مقصدهای اعلان</Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

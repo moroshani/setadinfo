@@ -18,28 +18,20 @@ DATABASE_URL=sqlite:///./tmp-contributor-migration.db python -m alembic -c alemb
 cd frontend-workbench
 pnpm audit --audit-level=high
 pnpm lint
-pnpm exec playwright install chromium
 pnpm test
 pnpm build
 pnpm verify:demo
 ```
 
-UI changes should include desktop and mobile screenshot QA using sanitized demo
-data. See `docs/demo-data.md` and
-`frontend-workbench/scripts/capture-public-screenshots.mjs`.
-
-Changes to routes, data adapters, or the public lab must keep the browser-only
-boundary intact: no `/api`, Setad, or Rubika request may leave the demo. The
-`verify:demo` command enforces this boundary while exercising every main route
-at desktop and mobile widths.
+UI changes should include desktop and mobile browser QA with sanitized data when
+the visible workflow changes. `pnpm verify:demo` must confirm that the static
+demo does not make backend, Setad, or Rubika requests.
 
 ## Pull Requests
 
 - Keep changes scoped.
 - Add tests for backend behavior changes.
 - Do not include private operational files or real recipient IDs.
-- Keep Persian copy and the RTL-first interaction model intact unless the issue
-  explicitly changes them.
-- Disclose material AI assistance in the pull request. The contributor remains
-  responsible for review, provenance, security, and every submitted change.
-- Read `AGENTS.md` before making AI-assisted changes.
+- Update documentation when APIs, operations, or notification behavior changes.
+- Disclose material AI assistance and remain responsible for every submitted
+  change and verification claim.

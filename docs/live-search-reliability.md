@@ -119,8 +119,8 @@ Run backend and frontend checks:
 $env:PYTHONPATH='backend'
 python -m unittest discover -s backend/tests -v
 cd frontend
-npm run lint
-npm run build
+pnpm lint
+pnpm build
 ```
 
 Run authenticated production desktop QA with `QA_USERNAME` and `QA_PASSWORD`

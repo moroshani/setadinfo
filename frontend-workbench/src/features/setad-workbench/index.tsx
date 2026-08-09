@@ -114,14 +114,17 @@ function formatDate(value: string | null | undefined) {
 
 function eventLabel(type: string) {
   const labels: Record<string, string> = {
-    baseline: 'اولیه',
-    new_listing: 'جدید',
+    baseline: 'لیست اولیه',
+    baseline_summary: 'لیست اولیه',
+    new_listing: 'آگهی جدید',
     listing_new: 'جدید',
-    listing_changed: 'تغییر',
-    removed_listing: 'حذف',
-    listing_removed: 'حذف',
+    listing_changed: 'تغییر مهم',
+    removed_listing: 'خروج از نتایج',
+    listing_removed: 'خروج از نتایج',
     offer_new: 'پیشنهاد تازه',
     offer_changed: 'تغییر پیشنهاد',
+    run_failed: 'خطای اجرا',
+    monitor_needs_attention: 'نیازمند بررسی',
   }
   return labels[type] ?? type
 }
@@ -244,6 +247,19 @@ function taskPayload(
     notify_new_listings: task.notify_new_listings,
     notify_listing_changes: task.notify_listing_changes,
     notify_offer_changes: task.notify_offer_changes,
+    notification_frequency: task.notification_frequency ?? 'immediate',
+    notification_event_types: task.notification_event_types?.length
+      ? task.notification_event_types
+      : [
+          'baseline_summary',
+          'listing_new',
+          'listing_changed',
+          'listing_removed',
+          'offer_new',
+          'offer_changed',
+          'run_failed',
+          'monitor_needs_attention',
+        ],
     rubika_chat_id: task.rubika_chat_id,
     recipient_ids: task.recipient_ids ?? [],
     filters: task.filters as TaskFilters,
@@ -314,7 +330,7 @@ function UpdatesList({
     return (
       <EmptyState
         title='هنوز بروزرسانی ثبت نشده'
-        detail='بعد از اجرای پایش‌ها، baseline و تغییرات معنی‌دار اینجا دیده می‌شوند.'
+        detail='بعد از اجرای پایش‌ها، لیست اولیه و فقط تغییرات معنی‌دار اینجا دیده می‌شوند.'
       />
     )
   }
@@ -331,11 +347,16 @@ function UpdatesList({
             <div>
               <strong className='leading-6'>{item.title}</strong>
               <p className='mt-1 leading-6 text-muted-foreground'>
-                {item.summary || 'بدون توضیح تکمیلی'}
+                {item.card?.reason || item.summary || 'بدون توضیح تکمیلی'}
               </p>
             </div>
             <Badge variant='outline'>{eventLabel(item.event_type)}</Badge>
           </div>
+          {item.card?.body ? (
+            <pre className='mt-3 rounded-md bg-muted/40 p-3 text-xs leading-6 whitespace-pre-wrap'>
+              {item.card.body}
+            </pre>
+          ) : null}
           <div className='grid gap-2 rounded-md bg-muted/40 p-3 text-xs md:grid-cols-2'>
             {[
               ['شماره', eventListingPayload(item).trade_number],
@@ -468,7 +489,7 @@ function MonitorTable({
         <TableRow>
           <TableHead>نام</TableHead>
           <TableHead>فیلتر</TableHead>
-          <TableHead>baseline</TableHead>
+          <TableHead>لیست اولیه</TableHead>
           <TableHead>اجرای بعدی</TableHead>
           <TableHead>وضعیت</TableHead>
           {onRun || onToggle || onDelete ? (
@@ -487,7 +508,11 @@ function MonitorTable({
             <TableCell className='max-w-[22rem] whitespace-normal'>
               {taskSummary(task)}
             </TableCell>
-            <TableCell>{formatDate(task.baseline_notified_at)}</TableCell>
+            <TableCell>
+              {formatDate(
+                task.baseline_captured_at ?? task.baseline_notified_at
+              )}
+            </TableCell>
             <TableCell>{formatDate(task.next_run_at)}</TableCell>
             <TableCell>
               <Badge variant={statusVariant(task.enabled)}>
@@ -823,7 +848,8 @@ export function SetadOverview() {
   const updates = updatesQuery.data?.items ?? []
   const refreshedAt = dashboardQuery.dataUpdatedAt || 0
   const tasksWithoutBaseline = tasks.filter(
-    (task) => task.enabled && !task.baseline_notified_at
+    (task) =>
+      task.enabled && !(task.baseline_captured_at ?? task.baseline_notified_at)
   )
   const dueTasks = tasks.filter((task) => {
     if (!task.enabled || !task.next_run_at) return false
@@ -844,7 +870,7 @@ export function SetadOverview() {
   ]
   const queues = [
     {
-      title: 'بدون baseline',
+      title: 'بدون لیست اولیه',
       value: tasksWithoutBaseline.length,
       detail: 'پایش‌های فعال که هنوز اجرای اولیه موفق ندارند.',
       href: '/monitors',
@@ -874,7 +900,7 @@ export function SetadOverview() {
     },
     {
       title: 'رسیدگی به تغییرها',
-      detail: 'baseline، آگهی جدید، تغییر آگهی و تغییر پیشنهاد.',
+      detail: 'لیست اولیه، آگهی جدید، تغییر آگهی و تغییر پیشنهاد.',
       href: '/updates',
       icon: Bell,
     },
@@ -892,7 +918,7 @@ export function SetadOverview() {
         <div className='flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between'>
           <div className='max-w-3xl'>
             <p className='text-sm text-muted-foreground'>ورک‌بنچ SetadInfo</p>
-            <h1 className='mt-1 text-2xl font-semibold tracking-normal md:text-3xl'>
+            <h1 className='mt-1 text-xl leading-9 font-semibold tracking-normal sm:text-2xl md:text-3xl'>
               کنترل روزانه فرصت‌ها، پایش‌ها و تغییرات Setad
             </h1>
             <p className='mt-3 text-sm leading-7 text-muted-foreground'>
@@ -986,7 +1012,7 @@ export function SetadOverview() {
           <CardHeader>
             <CardTitle>پایش‌های مهم</CardTitle>
             <CardDescription>
-              پایش‌ها را از نظر baseline، اجرای بعدی و فعال بودن کنترل کنید.
+              پایش‌ها را از نظر لیست اولیه، اجرای بعدی و فعال بودن کنترل کنید.
             </CardDescription>
           </CardHeader>
           <CardContent className='min-w-0'>
@@ -1215,7 +1241,7 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
   return (
     <SetadPageShell
       title={task?.name ?? 'جزئیات پایش'}
-      description='نمای عملیاتی یک پایش: تعریف فیلتر، baseline، تغییرات، اجراها و آگهی‌های متصل.'
+      description='نمای عملیاتی یک پایش: تعریف فیلتر، لیست اولیه، تغییرات، اجراها و آگهی‌های متصل.'
       icon={ListChecks}
     >
       <ApiState error={tasksQuery.error} isLoading={tasksQuery.isLoading} />
@@ -1262,9 +1288,11 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
                 </Badge>
               </div>
               <div className='rounded-md border p-3'>
-                <div className='text-xs text-muted-foreground'>baseline</div>
+                <div className='text-xs text-muted-foreground'>لیست اولیه</div>
                 <div className='mt-2 text-sm font-medium'>
-                  {formatDate(task.baseline_notified_at)}
+                  {formatDate(
+                    task.baseline_captured_at ?? task.baseline_notified_at
+                  )}
                 </div>
               </div>
               <div className='rounded-md border p-3'>
@@ -1277,7 +1305,7 @@ export function SetadMonitorDetailPage({ taskId }: { taskId: string }) {
                 <div className='text-xs text-muted-foreground'>اعلان‌ها</div>
                 <div className='mt-2 flex flex-wrap gap-1'>
                   {task.notify_initial ? (
-                    <Badge variant='outline'>baseline</Badge>
+                    <Badge variant='outline'>لیست اولیه</Badge>
                   ) : null}
                   {task.notify_new_listings ? (
                     <Badge variant='outline'>جدید</Badge>
@@ -1388,7 +1416,7 @@ export function SetadUpdatesPage() {
   return (
     <SetadPageShell
       title='بروزرسانی‌ها'
-      description='رویدادهای baseline، افزوده، حذف، تغییر و پیشنهادهای مزایده.'
+      description='رویدادهای لیست اولیه، افزوده، خروج از نتایج، تغییر و پیشنهادهای مزایده.'
       icon={Bell}
     >
       <Card>
@@ -1410,12 +1438,13 @@ export function SetadUpdatesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>همه رویدادها</SelectItem>
-              <SelectItem value='baseline'>baseline اولیه</SelectItem>
-              <SelectItem value='new_listing'>آگهی جدید</SelectItem>
+              <SelectItem value='baseline_summary'>لیست اولیه</SelectItem>
+              <SelectItem value='listing_new'>آگهی جدید</SelectItem>
               <SelectItem value='listing_changed'>تغییر آگهی</SelectItem>
-              <SelectItem value='removed_listing'>حذف آگهی</SelectItem>
+              <SelectItem value='listing_removed'>خروج از نتایج</SelectItem>
               <SelectItem value='offer_new'>پیشنهاد جدید</SelectItem>
               <SelectItem value='offer_changed'>تغییر پیشنهاد</SelectItem>
+              <SelectItem value='run_failed'>خطای اجرا</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -1780,12 +1809,12 @@ export function SetadRecipientsPage() {
           <CardHeader>
             <CardTitle>رفتار اعلان</CardTitle>
             <CardDescription>
-              مقصدها پیام baseline اولیه و سپس فقط کارت‌های تغییرات معنی‌دار را
+              مقصدها پیام لیست اولیه و سپس فقط کارت‌های تغییرات معنی‌دار را
               دریافت می‌کنند.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Badge variant='outline'>baseline + delta</Badge>
+            <Badge variant='outline'>لیست اولیه + تغییر جدید</Badge>
           </CardContent>
         </Card>
       </div>

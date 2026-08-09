@@ -3,10 +3,9 @@
 SetadInfo can run on one small VPS with Docker Compose, PostgreSQL, Redis,
 FastAPI workers, and the routed workbench served by Nginx.
 
-This full-stack deployment is separate from the public, synthetic GitHub Pages
-lab at `https://moroshani.github.io/setadinfo/`. The Pages build has no backend,
-credentials, production data, Setad traffic, or Rubika traffic; it exists only
-for safe product evaluation.
+This private full-stack deployment is separate from the synthetic public lab at
+`https://moroshani.github.io/setadinfo/`. The Pages lab has no backend,
+credentials, production records, Setad traffic, or Rubika traffic.
 
 ## Target Shape
 
@@ -36,6 +35,20 @@ values:
 
 Never commit production values, bot tokens, chat IDs, database dumps, SSH keys,
 or certificate private keys.
+
+## Registry Mirrors
+
+The VPS build is mirror-aware. If the server has slow or blocked access to
+Docker Hub, PyPI, or npm, set these values in `/opt/setadinfo/.env` before
+running `docker compose up -d --build`:
+
+- `PYTHON_IMAGE`, `NODE_IMAGE`, `NGINX_IMAGE`, `POSTGRES_IMAGE`, `REDIS_IMAGE`
+- `PIP_INDEX_URL`, optional `PIP_TRUSTED_HOST`
+- `PNPM_REGISTRY`
+
+`.env.example` includes upstream defaults plus commented mirror examples. Use
+the mirror that is reachable from the VPS; these values only affect container
+builds and pulls.
 
 ## TLS And Nginx
 
@@ -82,15 +95,8 @@ normal deployment.
 
 ## Public Demo Deployment
 
-`.github/workflows/demo.yml` builds `frontend-workbench` in `public-demo` mode,
-uploads `dist-demo`, and deploys it through GitHub Pages. Before changing that
-workflow or the demo adapter, run:
-
-```bash
-cd frontend-workbench
-pnpm verify:demo
-```
-
-The verifier serves the exact `/setadinfo/` base path and rejects outbound API
-requests, browser errors, and responsive overflow. Never point the Pages build
-at the production API.
+Public `main` contains `.github/workflows/demo.yml`, which builds the frontend
+in browser-only `public-demo` mode and deploys `dist-demo` to GitHub Pages. The
+release candidate keeps that workflow and updates its synthetic adapter for the
+notification redesign. Run `pnpm verify:demo` before publishing, and never point
+a public static build at the production API.

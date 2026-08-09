@@ -1,4 +1,3 @@
-import { ContentSection } from '../components/content-section'
 import { Link } from '@tanstack/react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { ContentSection } from '../components/content-section'
 
 export function SettingsAccount() {
   return (
@@ -21,7 +21,8 @@ export function SettingsAccount() {
           <CardHeader>
             <CardTitle>مدل دسترسی فعلی</CardTitle>
             <CardDescription>
-              بک‌اند از نقش‌های واقعی پشتیبانی می‌کند و صفحه کاربران به API مدیریت کاربر وصل است.
+              بک‌اند از نقش‌های واقعی پشتیبانی می‌کند و صفحه کاربران به API
+              مدیریت کاربر وصل است.
             </CardDescription>
           </CardHeader>
           <CardContent className='grid gap-3 md:grid-cols-3'>
@@ -50,7 +51,8 @@ export function SettingsAccount() {
           <CardHeader>
             <CardTitle>مدیریت کاربران</CardTitle>
             <CardDescription>
-              ساخت کاربر، تغییر نقش، فعال/غیرفعال کردن و تغییر رمز عبور در صفحه کاربران انجام می‌شود.
+              ساخت کاربر، تغییر نقش، فعال/غیرفعال کردن و تغییر رمز عبور در صفحه
+              کاربران انجام می‌شود.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -84,8 +84,10 @@ function formatDate(value: string | null) {
 function errorMessage(error: unknown) {
   if (error instanceof SetadApiError) {
     if (error.status === 401) return 'برای دیدن کاربران باید وارد شوید.'
-    if (error.status === 403) return 'فقط مدیر سیستم به مدیریت کاربران دسترسی دارد.'
-    if (error.status === 502) return 'بک‌اند محلی یا سرویس کاربران در دسترس نیست.'
+    if (error.status === 403)
+      return 'فقط مدیر سیستم به مدیریت کاربران دسترسی دارد.'
+    if (error.status === 502)
+      return 'بک‌اند محلی یا سرویس کاربران در دسترس نیست.'
     return error.message
   }
   if (error instanceof Error) return error.message
@@ -176,7 +178,8 @@ export function Users() {
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>کاربران</h2>
             <p className='text-muted-foreground'>
-              دسترسی مدیر، اپراتور و مشاهده‌گر را برای ورک‌بنچ SetadInfo مدیریت کنید.
+              دسترسی مدیر، اپراتور و مشاهده‌گر را برای ورک‌بنچ SetadInfo مدیریت
+              کنید.
             </p>
           </div>
           <div className='flex items-center gap-2'>
@@ -219,7 +222,8 @@ export function Users() {
               ) : usersQuery.isError ? (
                 <TableRow>
                   <TableCell colSpan={6} className='h-24 text-center'>
-                    امکان خواندن کاربران وجود ندارد: {errorMessage(usersQuery.error)}
+                    امکان خواندن کاربران وجود ندارد:{' '}
+                    {errorMessage(usersQuery.error)}
                   </TableCell>
                 </TableRow>
               ) : sortedUsers.length ? (
@@ -234,7 +238,9 @@ export function Users() {
                     <TableCell>
                       <div className='space-y-1'>
                         <Badge
-                          variant={user.role === 'admin' ? 'default' : 'secondary'}
+                          variant={
+                            user.role === 'admin' ? 'default' : 'secondary'
+                          }
                         >
                           {roleLabels[user.role]}
                         </Badge>
@@ -281,7 +287,8 @@ export function Users() {
               {editingUser ? 'ویرایش کاربر' : 'کاربر جدید'}
             </DialogTitle>
             <DialogDescription>
-              نقش کاربر تعیین می‌کند چه بخشی از پایش‌ها، نتایج و تنظیمات قابل تغییر باشد.
+              نقش کاربر تعیین می‌کند چه بخشی از پایش‌ها، نتایج و تنظیمات قابل
+              تغییر باشد.
             </DialogDescription>
           </DialogHeader>
 
@@ -318,7 +325,9 @@ export function Users() {
                   }))
                 }
                 placeholder={
-                  editingUser ? 'برای عدم تغییر خالی بگذارید' : 'حداقل ۱۰ کاراکتر'
+                  editingUser
+                    ? 'برای عدم تغییر خالی بگذارید'
+                    : 'حداقل ۱۰ کاراکتر'
                 }
                 autoComplete={editingUser ? 'new-password' : 'new-password'}
               />

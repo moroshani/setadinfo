@@ -84,6 +84,19 @@ class TaskCreate(BaseModel):
     notify_new_listings: bool = True
     notify_listing_changes: bool = True
     notify_offer_changes: bool = True
+    notification_frequency: Literal["immediate", "hourly", "daily", "in_app_only"] = "immediate"
+    notification_event_types: list[
+        Literal[
+            "baseline_summary",
+            "listing_new",
+            "listing_changed",
+            "listing_removed",
+            "offer_new",
+            "offer_changed",
+            "run_failed",
+            "monitor_needs_attention",
+        ]
+    ] = Field(default_factory=list)
     rubika_chat_id: str = ""
     recipient_ids: list[str] = Field(default_factory=list)
     filters: TaskFilters
@@ -105,6 +118,23 @@ class LiveOfferRequest(BaseModel):
     tag_code: int
 
 
+class NotificationPreviewRequest(BaseModel):
+    task_name: str = "پایش نمونه"
+    event_type: Literal[
+        "baseline_summary",
+        "listing_new",
+        "listing_changed",
+        "listing_removed",
+        "offer_new",
+        "offer_changed",
+        "run_failed",
+        "monitor_needs_attention",
+    ] = "listing_new"
+    listing: dict[str, Any] = Field(default_factory=dict)
+    offer: dict[str, Any] = Field(default_factory=dict)
+    changed_fields: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class TaskOut(BaseModel):
     id: str
     name: str
@@ -117,6 +147,8 @@ class TaskOut(BaseModel):
     notify_new_listings: bool
     notify_listing_changes: bool
     notify_offer_changes: bool
+    notification_frequency: str
+    notification_event_types: list[str]
     rubika_chat_id: str
     recipient_ids: list[str]
     filters: dict[str, Any]
@@ -125,7 +157,10 @@ class TaskOut(BaseModel):
     last_run_at: datetime | None
     next_run_at: datetime | None
     baseline_notified_at: datetime | None
+    baseline_captured_at: datetime | None
+    baseline_notification_sent_at: datetime | None
     last_successful_run_id: int | None
+    consecutive_failure_count: int
 
 
 class RunOut(BaseModel):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -8,7 +9,7 @@ from sqlalchemy import delete, desc, func, select
 from sqlalchemy.orm import Session
 
 from .config import get_settings
-from .models import Listing, MonitorTask, NotificationEvent, Offer, TaskMatch, TaskRun
+from .models import Listing, MonitorTask, NotificationCard, NotificationEvent, Offer, TaskMatch, TaskRun
 from .setad_client import (
     SetadClient,
     SetadRateLimitError,
@@ -21,9 +22,80 @@ from .setad_client import (
 
 settings = get_settings()
 
+CANONICAL_EVENT_TYPES = {
+    "baseline": "baseline_summary",
+    "new_listing": "listing_new",
+    "removed_listing": "listing_removed",
+}
+
+DEFAULT_NOTIFICATION_EVENT_TYPES = [
+    "baseline_summary",
+    "listing_new",
+    "listing_changed",
+    "listing_removed",
+    "offer_new",
+    "offer_changed",
+    "run_failed",
+    "monitor_needs_attention",
+]
+
+LISTING_DIFF_FIELDS = {
+    "title": "عنوان",
+    "organization": "سازمان",
+    "province": "استان",
+    "city": "شهر",
+    "category": "دسته‌بندی",
+    "send_deadline": "مهلت ارسال",
+    "document_deadline": "مهلت دریافت اسناد",
+    "price": "قیمت پایه",
+    "detail_url": "لینک جزئیات",
+}
+
+OFFER_DIFF_FIELDS = {
+    "bidder_name": "پیشنهاددهنده",
+    "amount": "مبلغ پیشنهاد",
+    "submitted_at": "زمان ثبت",
+    "status": "وضعیت",
+    "rank": "رتبه",
+}
+
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def canonical_event_type(event_type: str) -> str:
+    return CANONICAL_EVENT_TYPES.get(event_type, event_type)
+
+
+def stable_json(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+
+
+def fingerprint_value(value: Any) -> str:
+    return hashlib.sha256(stable_json(value).encode("utf-8", "ignore")).hexdigest()
+
+
+def normalize_event_types(values: list[str] | None) -> list[str]:
+    if not values:
+        return DEFAULT_NOTIFICATION_EVENT_TYPES.copy()
+    result: list[str] = []
+    for value in values:
+        event_type = canonical_event_type(value)
+        if event_type in DEFAULT_NOTIFICATION_EVENT_TYPES and event_type not in result:
+            result.append(event_type)
+    return result or DEFAULT_NOTIFICATION_EVENT_TYPES.copy()
+
+
+def event_enabled(task: MonitorTask, event_type: str) -> bool:
+    enabled = normalize_event_types(getattr(task, "notification_event_types", None))
+    return canonical_event_type(event_type) in enabled
+
+
+def simple_value(value: Any) -> str:
+    if value in (None, ""):
+        return "ثبت نشده"
+    return str(value)
 
 
 def serialize_task(task: MonitorTask) -> dict[str, Any]:
@@ -39,6 +111,8 @@ def serialize_task(task: MonitorTask) -> dict[str, Any]:
         "notify_new_listings": task.notify_new_listings,
         "notify_listing_changes": task.notify_listing_changes,
         "notify_offer_changes": task.notify_offer_changes,
+        "notification_frequency": getattr(task, "notification_frequency", "immediate") or "immediate",
+        "notification_event_types": normalize_event_types(getattr(task, "notification_event_types", None)),
         "rubika_chat_id": task.rubika_chat_id,
         "recipient_ids": [recipient.id for recipient in task.recipients],
         "owner_id": task.owner_id,
@@ -48,7 +122,10 @@ def serialize_task(task: MonitorTask) -> dict[str, Any]:
         "last_run_at": task.last_run_at,
         "next_run_at": task.next_run_at,
         "baseline_notified_at": task.baseline_notified_at,
+        "baseline_captured_at": getattr(task, "baseline_captured_at", None),
+        "baseline_notification_sent_at": getattr(task, "baseline_notification_sent_at", None),
         "last_successful_run_id": task.last_successful_run_id,
+        "consecutive_failure_count": getattr(task, "consecutive_failure_count", 0),
     }
 
 
@@ -95,17 +172,20 @@ def offer_to_dict(offer: Offer) -> dict[str, Any]:
 
 
 def notification_event_to_dict(event: NotificationEvent) -> dict[str, Any]:
+    reason = notification_reason(event.event_type, event.payload or {}, event.summary)
+    body = render_notification_body(event.event_type, event.title, event.summary, event.payload or {})
     return {
         "id": event.id,
         "task_id": event.task_id,
         "run_id": event.run_id,
         "listing_id": event.listing_id,
         "offer_id": event.offer_id,
-        "event_type": event.event_type,
+        "event_type": canonical_event_type(event.event_type),
         "severity": event.severity,
         "title": event.title,
         "summary": event.summary,
         "payload": event.payload,
+        "card": {"title": event.title, "reason": reason, "body": body},
         "created_at": event.created_at,
     }
 
@@ -126,6 +206,7 @@ def listing_event_payload(listing: Listing) -> dict[str, Any]:
         "document_deadline": listing.document_deadline,
         "price": listing.price,
         "content_hash": listing.content_hash,
+        "detail_url": listing.detail_url,
     }
 
 
@@ -144,6 +225,160 @@ def offer_event_payload(offer: Offer, listing: Listing) -> dict[str, Any]:
     }
 
 
+def field_changes_from_listing(listing: Listing, normalized: dict[str, Any]) -> list[dict[str, Any]]:
+    changes: list[dict[str, Any]] = []
+    for field, label in LISTING_DIFF_FIELDS.items():
+        before = getattr(listing, field)
+        after = normalized.get(field)
+        if before != after:
+            changes.append({"field": field, "label": label, "before": before, "after": after})
+    return changes
+
+
+def field_changes_from_offer(offer: Offer, normalized: dict[str, Any]) -> list[dict[str, Any]]:
+    changes: list[dict[str, Any]] = []
+    for field, label in OFFER_DIFF_FIELDS.items():
+        before = getattr(offer, field)
+        after = normalized.get(field)
+        if before != after:
+            changes.append({"field": field, "label": label, "before": before, "after": after})
+    return changes
+
+
+def changes_to_dict(changes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {
+        str(change["field"]): {
+            "label": change["label"],
+            "before": change.get("before"),
+            "after": change.get("after"),
+        }
+        for change in changes
+    }
+
+
+def first_change_reason(changes: list[dict[str, Any]], fallback: str) -> str:
+    if not changes:
+        return fallback
+    return f"{changes[0]['label']} تغییر کرد"
+
+
+def notification_reason(event_type: str, payload: dict[str, Any], summary: str) -> str:
+    event_type = canonical_event_type(event_type)
+    if payload.get("why_sent"):
+        return str(payload["why_sent"])
+    reasons = {
+        "baseline_summary": "لیست اولیه این پایش آماده شد.",
+        "listing_new": "این آگهی تازه با فیلتر پایش منطبق شد.",
+        "listing_changed": "یکی از اطلاعات مهم آگهی تغییر کرد.",
+        "listing_removed": "این آگهی در اجرای جدید در نتیجه پایش دیده نشد.",
+        "offer_new": "پیشنهاد جدیدی برای این مزایده ثبت شد.",
+        "offer_changed": "یکی از اطلاعات مهم پیشنهاد مزایده تغییر کرد.",
+        "run_failed": "اجرای پایش با خطا روبه‌رو شد.",
+        "monitor_needs_attention": "این پایش نیاز به بررسی دارد.",
+    }
+    return reasons.get(event_type, summary or "این پیام به دلیل تغییر معنی‌دار ارسال شد.")
+
+
+def render_change_lines(changes: list[dict[str, Any]]) -> list[str]:
+    lines: list[str] = []
+    for change in changes[:4]:
+        lines.extend(
+            [
+                f"{change['label']}:",
+                f"قبل: {simple_value(change.get('before'))}",
+                f"بعد: {simple_value(change.get('after'))}",
+            ]
+        )
+    return lines
+
+
+def render_notification_body(event_type: str, title: str, summary: str, payload: dict[str, Any]) -> str:
+    event_type = canonical_event_type(event_type)
+    listing = payload.get("listing") if isinstance(payload.get("listing"), dict) else payload
+    offer = payload.get("offer") if isinstance(payload.get("offer"), dict) else None
+    changes = payload.get("changed_fields") if isinstance(payload.get("changed_fields"), list) else []
+    reason = notification_reason(event_type, payload, summary)
+
+    if event_type == "baseline_summary":
+        count = int(payload.get("listing_count") or 0)
+        lines = [
+            "لیست اولیه پایش آماده شد",
+            "",
+            "چرا پیام آمد؟",
+            reason,
+            "",
+            f"پایش: {payload.get('monitor_name') or '-'}",
+            f"تعداد موارد پیدا شده: {format_money(count).replace(',', '٬') if count else '0'}",
+        ]
+        examples = payload.get("listings") if isinstance(payload.get("listings"), list) else []
+        if examples:
+            lines.extend(["", "چند مورد اول:"])
+            for item in examples[:3]:
+                if isinstance(item, dict):
+                    lines.append(f"- {item.get('trade_number') or '-'} | {item.get('title') or '-'}")
+        return "\n".join(lines)
+
+    heading = {
+        "listing_new": "آگهی جدید پیدا شد",
+        "listing_changed": "تغییر مهم در آگهی",
+        "listing_removed": "آگهی از نتیجه پایش خارج شد",
+        "offer_new": "پیشنهاد جدید در مزایده",
+        "offer_changed": "تغییر مهم در مزایده",
+        "run_failed": "خطا در اجرای پایش",
+        "monitor_needs_attention": "پایش نیاز به بررسی دارد",
+    }.get(event_type, title or "بروزرسانی SetadInfo")
+
+    lines = [
+        heading,
+        "",
+        "چرا پیام آمد؟",
+        reason,
+    ]
+    if listing:
+        lines.extend(
+            [
+                "",
+                f"شماره: {listing.get('trade_number') or '-'}",
+                f"عنوان: {listing.get('title') or '-'}",
+                f"سازمان: {listing.get('organization') or '-'}",
+                f"محل: {' / '.join(str(v) for v in (listing.get('province'), listing.get('city')) if v) or '-'}",
+                f"مهلت ارسال: {listing.get('send_deadline') or '-'}",
+                f"قیمت پایه: {format_money(listing.get('price'))} ریال",
+            ]
+        )
+    if offer:
+        lines.extend(
+            [
+                "",
+                f"پیشنهاددهنده: {offer.get('bidder_name') or '-'}",
+                f"مبلغ پیشنهاد: {format_money(offer.get('amount'))} ریال",
+                f"زمان ثبت: {offer.get('submitted_at') or '-'}",
+                f"وضعیت/رتبه: {offer.get('status') or '-'} / {offer.get('rank') or '-'}",
+            ]
+        )
+    if changes:
+        lines.extend(["", "چه چیزی تغییر کرد؟", *render_change_lines(changes)])
+    return "\n".join(lines)
+
+
+def ensure_notification_card(db: Session, event: NotificationEvent) -> NotificationCard:
+    existing = db.scalar(select(NotificationCard).where(NotificationCard.event_id == event.id))
+    if existing:
+        return existing
+    reason = notification_reason(event.event_type, event.payload or {}, event.summary)
+    card = NotificationCard(
+        event_id=event.id,
+        task_id=event.task_id,
+        card_type=canonical_event_type(event.event_type),
+        title=event.title,
+        reason=reason,
+        body=render_notification_body(event.event_type, event.title, event.summary, event.payload or {}),
+        payload=event.payload or {},
+    )
+    db.add(card)
+    return card
+
+
 def create_notification_event(
     db: Session,
     *,
@@ -158,6 +393,9 @@ def create_notification_event(
     dedupe_suffix: str,
     severity: str = "info",
 ) -> NotificationEvent | None:
+    event_type = canonical_event_type(event_type)
+    if not event_enabled(task, event_type):
+        return None
     dedupe_key = f"{task.id}:{event_type}:{dedupe_suffix}"
     existing = db.scalar(select(NotificationEvent).where(NotificationEvent.dedupe_key == dedupe_key))
     if existing:
@@ -175,6 +413,8 @@ def create_notification_event(
         dedupe_key=dedupe_key,
     )
     db.add(event)
+    db.flush()
+    ensure_notification_card(db, event)
     return event
 
 
@@ -188,37 +428,11 @@ def format_money(value: float | None) -> str:
 
 
 def render_event_card(event: NotificationEvent) -> str:
-    payload = event.payload or {}
-    listing = payload.get("listing") if isinstance(payload.get("listing"), dict) else payload
-    offer = payload.get("offer") if isinstance(payload.get("offer"), dict) else None
-    lines = [f"■ {event.title}"]
-    if listing:
-        lines.extend(
-            [
-                f"شماره: {listing.get('trade_number') or '-'}",
-                f"عنوان: {listing.get('title') or '-'}",
-                f"سازمان: {listing.get('organization') or '-'}",
-                f"محل: {' / '.join(str(v) for v in (listing.get('province'), listing.get('city')) if v) or '-'}",
-                f"مهلت ارسال: {listing.get('send_deadline') or '-'}",
-                f"قیمت پایه: {format_money(listing.get('price'))}",
-            ]
-        )
-    if offer:
-        lines.extend(
-            [
-                f"پیشنهاددهنده: {offer.get('bidder_name') or '-'}",
-                f"مبلغ پیشنهاد: {format_money(offer.get('amount'))}",
-                f"زمان ثبت: {offer.get('submitted_at') or '-'}",
-                f"وضعیت/رتبه: {offer.get('status') or '-'} / {offer.get('rank') or '-'}",
-            ]
-        )
-    if event.summary:
-        lines.append(event.summary)
-    return "\n".join(lines)
+    return render_notification_body(event.event_type, event.title, event.summary, event.payload or {})
 
 
 def render_notification_digest(task: MonitorTask, run: TaskRun, events: list[NotificationEvent], *, max_cards: int = 6) -> str:
-    baseline_count = sum(1 for event in events if event.event_type == "baseline")
+    baseline_count = sum(1 for event in events if canonical_event_type(event.event_type) == "baseline_summary")
     new_count = sum(1 for event in events if event.event_type == "listing_new")
     changed_count = sum(1 for event in events if event.event_type == "listing_changed")
     removed_count = sum(1 for event in events if event.event_type == "listing_removed")
@@ -492,6 +706,15 @@ def upsert_offer(
     listing_source_key: str,
     offer_item: dict[str, Any],
 ) -> bool:
+    return upsert_offer_with_changes(db, listing, listing_source_key, offer_item)["changed"]
+
+
+def upsert_offer_with_changes(
+    db: Session,
+    listing: Listing,
+    listing_source_key: str,
+    offer_item: dict[str, Any],
+) -> dict[str, Any]:
     normalized = normalize_offer(offer_item)
     offer_source = ":".join(
         [
@@ -507,26 +730,27 @@ def upsert_offer(
     offer_hash = fingerprint_listing(offer_item)
     offer = db.scalar(select(Offer).where(Offer.listing_id == listing.id, Offer.source_key == offer_source))
     if not offer:
-        db.add(
-            Offer(
-                listing_id=listing.id,
-                source_key=offer_source,
-                raw=offer_item,
-                content_hash=offer_hash,
-                first_seen_at=utcnow(),
-                last_seen_at=utcnow(),
-                **normalized,
-            )
+        offer = Offer(
+            listing_id=listing.id,
+            source_key=offer_source,
+            raw=offer_item,
+            content_hash=offer_hash,
+            first_seen_at=utcnow(),
+            last_seen_at=utcnow(),
+            **normalized,
         )
-        return True
+        db.add(offer)
+        db.flush()
+        return {"offer": offer, "created": True, "changed": True, "changed_fields": []}
 
-    changed = offer.content_hash != offer_hash
+    changed_fields = field_changes_from_offer(offer, normalized)
+    changed = bool(changed_fields)
     for key, value in normalized.items():
         setattr(offer, key, value)
     offer.raw = offer_item
     offer.content_hash = offer_hash
     offer.last_seen_at = utcnow()
-    return changed
+    return {"offer": offer, "created": False, "changed": changed, "changed_fields": changed_fields}
 
 
 def task_next_run(task: MonitorTask) -> datetime:
@@ -547,6 +771,7 @@ async def ingest_task_run(db: Session, task: MonitorTask) -> TaskRun:
     pages = 0
     seen_sources: set[str] = set()
     latest_payloads: list[dict[str, Any]] = []
+    baseline_items: list[dict[str, Any]] = []
     first_successful_run = task.last_successful_run_id is None
 
     try:
@@ -570,7 +795,7 @@ async def ingest_task_run(db: Session, task: MonitorTask) -> TaskRun:
             seen_sources.add(source_key)
             listing = db.scalar(select(Listing).where(Listing.source_key == source_key))
             listing_was_new = listing is None
-            listing_changed = False
+            listing_changes: list[dict[str, Any]] = []
             if not listing:
                 normalized_without_source = {key: value for key, value in normalized.items() if key != "source_key"}
                 listing = Listing(
@@ -582,11 +807,10 @@ async def ingest_task_run(db: Session, task: MonitorTask) -> TaskRun:
                 )
                 db.add(listing)
                 db.flush()
-                changed += 1
             else:
-                if listing.content_hash != normalized["content_hash"]:
+                listing_changes = field_changes_from_listing(listing, normalized)
+                if listing_changes:
                     changed += 1
-                    listing_changed = True
                 for key, value in normalized.items():
                     setattr(listing, key, value)
                 listing.raw = item
@@ -599,42 +823,42 @@ async def ingest_task_run(db: Session, task: MonitorTask) -> TaskRun:
                 match.last_seen_at = utcnow()
             matched += 1
 
-            if first_successful_run and task.notify_initial:
-                create_notification_event(
-                    db,
-                    task=task,
-                    run=run,
-                    event_type="baseline",
-                    title=listing.title or listing.trade_number or "آگهی پایش",
-                    summary="در فهرست اولیه پایش ثبت شد.",
-                    payload=listing_event_payload(listing),
-                    listing=listing,
-                    dedupe_suffix=source_key,
-                )
+            if first_successful_run:
+                baseline_items.append(listing_event_payload(listing))
             elif listing_was_new and task.notify_new_listings:
+                changed += 1
                 create_notification_event(
                     db,
                     task=task,
                     run=run,
                     event_type="listing_new",
-                    title=listing.title or listing.trade_number or "آگهی جدید",
-                    summary="مورد جدید با فیلتر پایش منطبق شد.",
-                    payload=listing_event_payload(listing),
+                    title=listing.title or listing.trade_number or "آگهی جدید پیدا شد",
+                    summary="این آگهی تازه با فیلتر پایش منطبق شد.",
+                    payload={
+                        "listing": listing_event_payload(listing),
+                        "why_sent": "این آگهی تازه با فیلتر پایش منطبق شد.",
+                    },
                     listing=listing,
                     dedupe_suffix=source_key,
                     severity="success",
                 )
-            elif listing_changed and task.notify_listing_changes:
+            elif listing_changes and task.notify_listing_changes:
+                reason = first_change_reason(listing_changes, "اطلاعات مهم آگهی تغییر کرد")
                 create_notification_event(
                     db,
                     task=task,
                     run=run,
                     event_type="listing_changed",
-                    title=listing.title or listing.trade_number or "تغییر آگهی",
-                    summary="اطلاعات عمومی این آگهی نسبت به مشاهده قبلی تغییر کرده است.",
-                    payload=listing_event_payload(listing),
+                    title=reason,
+                    summary="این پیام فقط چون یک مقدار مهم تغییر کرده ارسال شد.",
+                    payload={
+                        "listing": listing_event_payload(listing),
+                        "changes": changes_to_dict(listing_changes),
+                        "changed_fields": listing_changes,
+                        "why_sent": reason,
+                    },
                     listing=listing,
-                    dedupe_suffix=f"{source_key}:{listing.content_hash}",
+                    dedupe_suffix=f"{source_key}:{fingerprint_value(listing_changes)}",
                     severity="warning",
                 )
 
@@ -647,38 +871,54 @@ async def ingest_task_run(db: Session, task: MonitorTask) -> TaskRun:
                     settings.setad_max_pages_per_run,
                 )
                 for offer_item in offers:
-                    normalized_offer = normalize_offer(offer_item)
-                    offer_source = ":".join(
-                        [
-                            source_key,
-                            str(
-                                offer_item.get("id")
-                                or offer_item.get("rowId")
-                                or offer_item.get("supplierId")
-                                or normalized_offer["bidder_name"]
-                            ),
-                        ]
-                    )
-                    existing_offer = db.scalar(select(Offer.id).where(Offer.listing_id == listing.id, Offer.source_key == offer_source))
-                    offer_changed = upsert_offer(db, listing, source_key, offer_item)
-                    if offer_changed:
+                    result = upsert_offer_with_changes(db, listing, source_key, offer_item)
+                    if result["changed"]:
                         changed += 1
                         db.flush()
-                        offer = db.scalar(select(Offer).where(Offer.listing_id == listing.id, Offer.source_key == offer_source))
+                        offer = result["offer"]
                         if offer and task.notify_offer_changes and not first_successful_run:
+                            offer_created = bool(result["created"])
+                            offer_changes = result["changed_fields"]
+                            reason = (
+                                "پیشنهاد جدیدی برای این مزایده ثبت شد."
+                                if offer_created
+                                else first_change_reason(offer_changes, "اطلاعات مهم پیشنهاد مزایده تغییر کرد")
+                            )
                             create_notification_event(
                                 db,
                                 task=task,
                                 run=run,
-                                event_type="offer_changed" if existing_offer else "offer_new",
-                                title=f"پیشنهاد مزایده برای {listing.trade_number or listing.title}",
-                                summary="پیشنهاد عمومی مزایده تغییر کرده است.",
-                                payload=offer_event_payload(offer, listing),
+                                event_type="offer_new" if offer_created else "offer_changed",
+                                title="پیشنهاد جدید در مزایده" if offer_created else reason,
+                                summary="این پیام فقط به دلیل تغییر معنی‌دار در پیشنهاد مزایده ارسال شد.",
+                                payload={
+                                    **offer_event_payload(offer, listing),
+                                    "changes": changes_to_dict(offer_changes),
+                                    "changed_fields": offer_changes,
+                                    "why_sent": reason,
+                                },
                                 listing=listing,
                                 offer=offer,
-                                dedupe_suffix=f"{offer.source_key}:{offer.content_hash}",
+                                dedupe_suffix=f"{offer.source_key}:{fingerprint_value(offer_changes or offer_event_payload(offer, listing))}",
                                 severity="success",
                             )
+
+        if first_successful_run and task.notify_initial:
+            create_notification_event(
+                db,
+                task=task,
+                run=run,
+                event_type="baseline_summary",
+                title="لیست اولیه پایش آماده شد",
+                summary=f"{matched} مورد در اولین اجرای موفق این پایش ثبت شد.",
+                payload={
+                    "monitor_name": task.name,
+                    "listing_count": matched,
+                    "listings": baseline_items[:10],
+                    "why_sent": "این پیام فقط برای ثبت لیست اولیه پایش ارسال شد. از این به بعد فقط تغییرهای جدید اطلاع داده می‌شود.",
+                },
+                dedupe_suffix="initial-baseline",
+            )
 
         if not first_successful_run:
             previous_matches = db.scalars(
@@ -694,9 +934,12 @@ async def ingest_task_run(db: Session, task: MonitorTask) -> TaskRun:
                         task=task,
                         run=run,
                         event_type="listing_removed",
-                        title=listing.title or listing.trade_number or "خروج از نتایج پایش",
+                        title="آگهی از نتیجه پایش خارج شد",
                         summary="این مورد در اجرای جدید در نتایج Setad دیده نشد.",
-                        payload=listing_event_payload(listing),
+                        payload={
+                            "listing": listing_event_payload(listing),
+                            "why_sent": "این آگهی در اجرای جدید در نتیجه پایش دیده نشد.",
+                        },
                         listing=listing,
                         dedupe_suffix=listing.source_key,
                         severity="warning",
@@ -708,14 +951,66 @@ async def ingest_task_run(db: Session, task: MonitorTask) -> TaskRun:
         run.fetched_count = fetched
         run.matched_count = matched
         run.changed_count = changed
+        previous_failure_count = getattr(task, "consecutive_failure_count", 0) or 0
+        if previous_failure_count > 0:
+            create_notification_event(
+                db,
+                task=task,
+                run=run,
+                event_type="monitor_needs_attention",
+                title="پایش دوباره موفق شد",
+                summary="این پایش بعد از خطا دوباره با موفقیت اجرا شد.",
+                payload={
+                    "monitor_name": task.name,
+                    "why_sent": "این پایش بعد از خطا دوباره با موفقیت اجرا شد.",
+                    "previous_failure_count": previous_failure_count,
+                },
+                dedupe_suffix=f"recovered:{run.id}",
+                severity="success",
+            )
         task.last_successful_run_id = run.id
+        task.consecutive_failure_count = 0
         if first_successful_run:
+            task.baseline_captured_at = utcnow()
             task.baseline_notified_at = utcnow()
         return run
     except Exception as exc:
+        now = utcnow()
         run.status = "error"
         run.message = str(exc)
-        raise
+        run.fetched_count = fetched
+        run.matched_count = matched
+        run.changed_count = changed
+        task.last_run_at = now
+        previous_failure_count = getattr(task, "consecutive_failure_count", 0) or 0
+        task.consecutive_failure_count = previous_failure_count + 1
+        last_failure_notified_at = getattr(task, "last_failure_notified_at", None)
+        repeat_after = timedelta(hours=settings.notification_failure_repeat_hours)
+        should_notify_failure = (
+            previous_failure_count == 0
+            or last_failure_notified_at is None
+            or now - last_failure_notified_at >= repeat_after
+            or task.consecutive_failure_count in {3, 10}
+        )
+        if should_notify_failure:
+            create_notification_event(
+                db,
+                task=task,
+                run=run,
+                event_type="run_failed",
+                title="خطا در اجرای پایش",
+                summary="اجرای پایش با خطا روبه‌رو شد و نیاز به بررسی دارد.",
+                payload={
+                    "monitor_name": task.name,
+                    "error": str(exc),
+                    "failure_count": task.consecutive_failure_count,
+                    "why_sent": "اجرای پایش با خطا روبه‌رو شد.",
+                },
+                dedupe_suffix=f"{fingerprint_value(str(exc))}:{task.consecutive_failure_count}",
+                severity="error",
+            )
+            task.last_failure_notified_at = now
+        return run
     finally:
         run.finished_at = utcnow()
 

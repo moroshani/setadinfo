@@ -59,4 +59,30 @@ describe('public demo API', () => {
     )
     expect(afterReset.items).toHaveLength(initial.items.length)
   })
+
+  it('serves the current notification contract and preview workflow', async () => {
+    const tasks = await requestPublicDemo<{ items: MonitorTask[] }>(
+      '/api/tasks'
+    )
+    const notifications = await requestPublicDemo<{
+      items: { card: { body: string } | null }[]
+    }>('/api/notifications')
+    const preview = await requestPublicDemo<{ message: string }>(
+      '/api/notifications/preview',
+      'POST',
+      {
+        task_name: 'پایش امنیت',
+        listing: {
+          title: 'فراخوان خدمات امنیت',
+          organization: 'سازمان نمونه',
+        },
+      }
+    )
+
+    expect(tasks.items[0]?.notification_event_types).toContain('listing_new')
+    expect(tasks.items[0]?.baseline_captured_at).toBeTruthy()
+    expect(notifications.items[0]?.card?.body).toBeTruthy()
+    expect(preview.message).toContain('پایش امنیت')
+    expect(preview.message).toContain('فراخوان خدمات امنیت')
+  })
 })

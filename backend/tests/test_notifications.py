@@ -36,7 +36,7 @@ class NotificationEventTests(IsolatedAsyncioTestCase):
             db.flush()
             return run
 
-    async def test_first_successful_run_creates_initial_item_cards(self):
+    async def test_first_successful_run_creates_one_baseline_summary(self):
         with self.Session() as db:
             task = MonitorTask(name="کولر", filters={"keywords": ["کولر"], "searchTypeCode": 0})
             db.add(task)
@@ -51,9 +51,10 @@ class NotificationEventTests(IsolatedAsyncioTestCase):
 
             events = db.scalars(select(NotificationEvent).where(NotificationEvent.run_id == run.id)).all()
 
-        self.assertEqual([event.event_type for event in events], ["baseline"])
-        self.assertEqual(events[0].payload["trade_number"], "31001")
-        self.assertIn("شماره: 31001", render_notification_digest(task, run, events))
+        self.assertEqual([event.event_type for event in events], ["baseline_summary"])
+        self.assertEqual(events[0].payload["listing_count"], 1)
+        self.assertEqual(events[0].payload["listings"][0]["trade_number"], "31001")
+        self.assertIn("لیست اولیه پایش آماده شد", render_notification_digest(task, run, events))
 
     async def test_unchanged_followup_run_sends_no_events(self):
         with self.Session() as db:
@@ -98,7 +99,7 @@ class NotificationEventTests(IsolatedAsyncioTestCase):
             events = db.scalars(select(NotificationEvent).where(NotificationEvent.run_id == second_run.id)).all()
 
         self.assertEqual([event.event_type for event in events], ["listing_new"])
-        self.assertEqual(events[0].payload["trade_number"], "31002")
+        self.assertEqual(events[0].payload["listing"]["trade_number"], "31002")
 
     async def test_followup_run_creates_listing_changed_event(self):
         with self.Session() as db:
@@ -123,7 +124,32 @@ class NotificationEventTests(IsolatedAsyncioTestCase):
             events = db.scalars(select(NotificationEvent).where(NotificationEvent.run_id == second_run.id)).all()
 
         self.assertEqual([event.event_type for event in events], ["listing_changed"])
-        self.assertIn("گازی", events[0].payload["title"])
+        self.assertEqual(events[0].payload["changed_fields"][0]["field"], "title")
+        self.assertIn("گازی", events[0].payload["changed_fields"][0]["after"])
+
+    async def test_raw_only_followup_change_does_not_notify(self):
+        with self.Session() as db:
+            task = MonitorTask(name="کولر", filters={"keywords": ["کولر"], "searchTypeCode": 0})
+            db.add(task)
+            db.flush()
+            await self.run_task_with_client(
+                db,
+                task,
+                FakeSetadClient(
+                    [[{"boardCode": 1, "tagCode": 1431, "partyNumber": "p1", "number": "31001", "tableId": "t1", "title": "خرید کولر", "debug": "old"}]]
+                ),
+            )
+            second_run = await self.run_task_with_client(
+                db,
+                task,
+                FakeSetadClient(
+                    [[{"boardCode": 1, "tagCode": 1431, "partyNumber": "p1", "number": "31001", "tableId": "t1", "title": "خرید کولر", "debug": "new"}]]
+                ),
+            )
+
+            events = db.scalars(select(NotificationEvent).where(NotificationEvent.run_id == second_run.id)).all()
+
+        self.assertEqual(events, [])
 
     async def test_auction_offer_history_creates_useful_offer_event_cards(self):
         listing = {
@@ -155,3 +181,34 @@ class NotificationEventTests(IsolatedAsyncioTestCase):
         self.assertEqual([event.event_type for event in events], ["offer_new"])
         self.assertIn("پیشنهاددهنده: شرکت دوم", digest)
         self.assertIn("مبلغ پیشنهاد: 200", digest)
+
+    async def test_changed_auction_offer_includes_before_after(self):
+        listing = {
+            "boardCode": 3,
+            "tagCode": 343,
+            "partyNumber": "auction-2",
+            "number": "31004",
+            "tableId": "t4",
+            "title": "مزایده کولر",
+        }
+        with self.Session() as db:
+            task = MonitorTask(name="مزایده کولر", filters={"keywords": ["کولر"], "searchTypeCode": 0}, include_offers=True)
+            db.add(task)
+            db.flush()
+            await self.run_task_with_client(
+                db,
+                task,
+                FakeSetadClient([[listing]], offers=[[{"id": 1, "supplierName": "شرکت اول", "proposalPrice": "100"}]]),
+            )
+            second_run = await self.run_task_with_client(
+                db,
+                task,
+                FakeSetadClient([[listing]], offers=[[{"id": 1, "supplierName": "شرکت اول", "proposalPrice": "125"}]]),
+            )
+
+            events = db.scalars(select(NotificationEvent).where(NotificationEvent.run_id == second_run.id)).all()
+
+        self.assertEqual([event.event_type for event in events], ["offer_changed"])
+        self.assertEqual(events[0].payload["changed_fields"][0]["field"], "amount")
+        self.assertEqual(events[0].payload["changed_fields"][0]["before"], 100)
+        self.assertEqual(events[0].payload["changed_fields"][0]["after"], 125)
