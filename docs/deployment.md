@@ -3,6 +3,11 @@
 SetadInfo can run on one small VPS with Docker Compose, PostgreSQL, Redis,
 FastAPI workers, and the routed workbench served by Nginx.
 
+This full-stack deployment is separate from the public, synthetic GitHub Pages
+lab at `https://moroshani.github.io/setadinfo/`. The Pages build has no backend,
+credentials, production data, Setad traffic, or Rubika traffic; it exists only
+for safe product evaluation.
+
 ## Target Shape
 
 - Public domain: your own hostname, for example `setadinfo.example.com`
@@ -74,3 +79,18 @@ curl -fsS http://127.0.0.1:18731/api/health
 
 The database and Redis volumes are persistent. Do not delete them during a
 normal deployment.
+
+## Public Demo Deployment
+
+`.github/workflows/demo.yml` builds `frontend-workbench` in `public-demo` mode,
+uploads `dist-demo`, and deploys it through GitHub Pages. Before changing that
+workflow or the demo adapter, run:
+
+```bash
+cd frontend-workbench
+pnpm verify:demo
+```
+
+The verifier serves the exact `/setadinfo/` base path and rejects outbound API
+requests, browser errors, and responsive overflow. Never point the Pages build
+at the production API.

@@ -1,8 +1,9 @@
 # Agent Guide
 
 This file gives coding agents and human contributors the minimum durable context
-needed to work safely in SetadInfo. Read `README.md`, `CONTRIBUTING.md`, and the
-relevant document under `docs/` before changing behavior.
+needed to work safely in SetadInfo. Read `README.md`, `docs/README.md`,
+`CONTRIBUTING.md`, and the relevant document under `docs/` before changing
+behavior.
 
 ## Repository Map
 
@@ -13,6 +14,8 @@ relevant document under `docs/` before changing behavior.
   data.
 - `deploy/`: public deployment examples only; production operations stay out of
   this repository.
+- `.github/workflows/demo.yml`: builds the browser-only lab and deploys it to
+  GitHub Pages.
 
 ## Product Invariants
 
@@ -24,6 +27,9 @@ relevant document under `docs/` before changing behavior.
   in `frontend-workbench/src/lib/setad-boards.ts`.
 - Browser code calls the local `/api` surface. It must not call the public Setad
   gateway or messaging providers directly.
+- Public-demo mode is the only exception to the local `/api` transport: it must
+  resolve requests through `src/lib/public-demo-api.ts` before `fetch`, use only
+  synthetic data, and make no network request to `/api`, Setad, or Rubika.
 - Monitor behavior is baseline plus delta: the first successful run establishes
   state; later runs report meaningful changes.
 - Role boundaries for `admin`, `operator`, and `viewer` must remain enforced in
@@ -51,11 +57,13 @@ pnpm lint
 pnpm exec playwright install chromium
 pnpm test
 pnpm build
+pnpm verify:demo
 ```
 
 Use focused tests while iterating, then run the complete relevant gate. For UI
 changes, seed the sanitized demo database and inspect desktop and mobile
-screenshots as described in `docs/demo-data.md`.
+screenshots as described in `docs/demo-data.md`. Changes that affect routes,
+API adapters, or layout must also pass `pnpm verify:demo`.
 
 ## Change Discipline
 

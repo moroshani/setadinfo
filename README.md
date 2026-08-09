@@ -244,6 +244,8 @@ WORKBENCH_URL=http://127.0.0.1:5181 node scripts/capture-public-screenshots.mjs
 
 ## مستندات
 
+- [نمایه و وضعیت فعلی مستندات](docs/README.md)
+- [Changelog](CHANGELOG.md)
 - [راهنمای بازطراحی فرانت‌اند](FRONTEND_REDESIGN_BRIEF.md)
 - [Roadmap](ROADMAP.md)
 - [قرارداد API فرانت‌اند](docs/api-contract.md)

@@ -21,11 +21,17 @@ pnpm lint
 pnpm exec playwright install chromium
 pnpm test
 pnpm build
+pnpm verify:demo
 ```
 
 UI changes should include desktop and mobile screenshot QA using sanitized demo
 data. See `docs/demo-data.md` and
 `frontend-workbench/scripts/capture-public-screenshots.mjs`.
+
+Changes to routes, data adapters, or the public lab must keep the browser-only
+boundary intact: no `/api`, Setad, or Rubika request may leave the demo. The
+`verify:demo` command enforces this boundary while exercising every main route
+at desktop and mobile widths.
 
 ## Pull Requests
 

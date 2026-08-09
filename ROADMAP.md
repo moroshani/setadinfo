@@ -20,17 +20,25 @@
 - Alembic و migration اولیه schema در مخزن اضافه شده است.
 - seed/demo mode محلی برای بازبینی امن UI بدون اتصال به Setad و Rubika اضافه
   شده است.
+- نسخه نمایشی browser-only با داده کاملا ساختگی روی GitHub Pages منتشر شده و
+  verifier آن همه مسیرهای اصلی، جستجو، نبود درخواست API و overflow را در دسکتاپ
+  و موبایل کنترل می‌کند.
 - جریان‌های اصلی محصول برای بازطراحی UI/UX در `docs/product-workflows.md`
   مستند شده‌اند.
+- CI، CodeQL، Dependabot، گزارش خصوصی آسیب‌پذیری و سیاست‌های امنیتی مخزن فعال
+  شده‌اند.
 
 ## اولویت‌های بعدی
 
-1. بازطراحی کامل UX/UI فرانت‌اند بر اساس
+1. ادامه بازطراحی UX/UI فرانت‌اند بر اساس
    [FRONTEND_REDESIGN_BRIEF.md](FRONTEND_REDESIGN_BRIEF.md).
-2. تکمیل QA تصویری بعد از بازطراحی، شامل viewport دسکتاپ و موبایل.
-3. سخت‌تر کردن observability production: structured logs، export خطاها و run
+2. آماده‌سازی اولین source release تگ‌شده با مرز نسخه و release notes روشن.
+3. تقسیم bundle فرانت‌اند در سطح route برای حذف هشدار فعلی chunk اصلی، بدون
+   تضعیف تجربه مسیریابی.
+4. سخت‌تر کردن observability production: structured logs، export خطاها و run
    failure dashboard.
-4. مستندسازی دقیق‌تر API عمومی داخلی برای مصرف‌های بیرون از فرانت‌اند فعلی.
+5. تولید یا همگام‌سازی خودکار قرارداد API برای کاهش drift میان FastAPI و
+   TypeScript.
 
 ## خط قرمزهای انتشار عمومی
 

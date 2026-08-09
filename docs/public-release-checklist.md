@@ -1,8 +1,9 @@
 # Public Release Checklist
 
-Updated: 2026-06-20
+Updated: 2026-08-09
 
-Use this checklist before creating or pushing the dedicated public repository.
+The public repository already exists. Use this checklist before every public
+push, Pages deployment, or tagged source release.
 
 ## Must Exclude
 
@@ -28,7 +29,12 @@ Use this checklist before creating or pushing the dedicated public repository.
 ## Pre-Push Checks
 
 - Run backend tests.
-- Run `frontend-workbench` lint and production build.
+- Run the fresh SQLite Alembic migration.
+- Run `frontend-workbench` audit, lint, tests, production build, and
+  `pnpm verify:demo`.
 - Search for obvious secret names and production-only values.
 - Confirm ignored files stay ignored after copying into the public repo.
 - Review `README.md` as if a new contributor is installing the app from zero.
+- Confirm the Pages bundle contains only synthetic data and makes no `/api`,
+  Setad, or Rubika request.
+- Confirm CI, CodeQL, and Pages workflows pass on the exact published commit.
