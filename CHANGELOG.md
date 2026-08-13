@@ -1,30 +1,16 @@
 # Changelog
 
-All notable public changes to SetadInfo are recorded here. The project has not
-yet published a tagged source release.
+All notable changes to SetadInfo are recorded here.
 
 ## Unreleased
 
-### Added
-
-- Safe browser-only public lab deployed through GitHub Pages with synthetic data,
-  in-memory mutations, hash routing, and coverage for every main route.
-- Automated public-demo verification that rejects API requests, browser errors,
-  layout overflow, and broken search interaction at desktop and mobile widths.
-- CI, CodeQL, grouped Dependabot policy, private vulnerability reporting, and
-  public contributor/security documentation.
-- Sanitized product screenshots and documented full-stack demo seeding.
-
-### Changed
-
-- Centralized official Setad board mapping for purchase, tender, and auction.
-- Hardened responsive workbench layouts, search filters, Persian date display,
-  and mobile result presentation.
-- Updated vulnerable backend and frontend dependencies and modernized GitHub
-  Actions.
-
-### Security
-
-- Removed cleartext demo-password logging.
-- Kept production credentials, Rubika identifiers, customer data, and private
-  operational files outside the public repository and demo bundle.
+- Overhauled notification semantics around one baseline summary and meaningful follow-up changes.
+- Added canonical event types for listings, auction offers, run failures, and monitor attention states.
+- Added field-aware listing and offer diffs so change messages can show before/after values.
+- Added notification cards, delivery attempts, delivery retry surfaces, and system status APIs.
+- Lowered the default minimum monitor interval to 5 minutes.
+- Added CodeQL, Dependabot, and expanded public-repo hygiene documentation.
+- Reconciled the notification redesign with the synthetic browser-only GitHub
+  Pages lab at `https://moroshani.github.io/setadinfo/`.
+- Updated the public demo fixtures for notification cards, task baselines, event
+  policy fields, and browser-only notification previews.

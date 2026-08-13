@@ -1,79 +1,83 @@
-# Agent Guide
+# Codebase Knowledge Graph (codebase-memory-mcp)
 
-This file gives coding agents and human contributors the minimum durable context
-needed to work safely in SetadInfo. Read `README.md`, `docs/README.md`,
-`CONTRIBUTING.md`, and the relevant document under `docs/` before changing
-behavior.
+This project uses codebase-memory-mcp to maintain a knowledge graph of the codebase.
+Always prefer MCP graph tools over grep/glob/file-search for code discovery.
 
-## Repository Map
+## Priority Order
 
-- `backend/`: FastAPI, SQLAlchemy, Celery, Setad and Rubika integrations.
-- `frontend-workbench/`: React, TypeScript, Vite, TanStack Router and Query.
-- `backend/migrations/`: Alembic schema migrations.
-- `docs/`: product workflows, architecture, API contract, deployment, and demo
-  data.
-- `deploy/`: public deployment examples only; production operations stay out of
-  this repository.
-- `.github/workflows/demo.yml`: builds the browser-only lab and deploys it to
-  GitHub Pages.
+1. `search_graph` - find functions, classes, routes, variables by pattern
+2. `trace_path` - trace who calls a function or what it calls
+3. `get_code_snippet` - read specific function/class source code
+4. `query_graph` - run Cypher queries for complex patterns
+5. `get_architecture` - high-level project summary
 
-## Product Invariants
+## When To Fall Back To Grep/Glob
 
-- The interface is Persian and RTL-first. The default document direction is
-  `rtl`; accessibility names may intentionally remain explicit English where
-  the settings surface uses English.
-- Official Setad board codes are `1` for purchase (`خرید`), `2` for tender
-  (`مناقصه`), and `3` for auction (`مزایده`). Keep parsing and labels centralized
-  in `frontend-workbench/src/lib/setad-boards.ts`.
-- Browser code calls the local `/api` surface. It must not call the public Setad
-  gateway or messaging providers directly.
-- Public-demo mode is the only exception to the local `/api` transport: it must
-  resolve requests through `src/lib/public-demo-api.ts` before `fetch`, use only
-  synthetic data, and make no network request to `/api`, Setad, or Rubika.
-- Monitor behavior is baseline plus delta: the first successful run establishes
-  state; later runs report meaningful changes.
-- Role boundaries for `admin`, `operator`, and `viewer` must remain enforced in
-  the backend, regardless of frontend visibility.
+- Searching for string literals, error messages, config values
+- Searching non-code files such as Dockerfiles, shell scripts, and configs
+- When MCP tools return insufficient results
+
+## Examples
+
+- Find a handler: `search_graph(name_pattern=".*OrderHandler.*")`
+- Who calls it: `trace_path(function_name="OrderHandler", direction="inbound")`
+- Read source: `get_code_snippet(qualified_name="pkg/orders.OrderHandler")`
+
+---
+
+# SetadInfo Project Guide
+
+## Start Here
+
+1. Read `README.md` and `docs/README.md`.
+2. Read `CONTRIBUTING.md` and the relevant product or operations document.
+3. Inspect Git status before every edit.
+
+## Local Worktree Safety
+
+As of 2026-08-09, `C:\Projects\setadinfo` is the user's active unpublished
+development checkout with substantial uncommitted notification and redesign
+work. A complete snapshot is preserved on
+`safety/local-snapshot-20260809` at `18a20a8`.
+
+- Never reset, clean, checkout, pull, merge, or overwrite this worktree to make
+  it match GitHub.
+- Preserve the notification/redesign work and all untracked docs.
+- The reconciled release candidate is
+  `C:\Projects\setadinfo-reconcile-20260809` on
+  `integrate/public-main-20260809`. It replays only the captured local work on
+  top of public `main` and keeps the browser-only demo introduced at `e72218a`.
+- Do not copy the release candidate over the active checkout. Move the active
+  checkout only after the candidate is reviewed, published, and the dirty state
+  is handled explicitly.
+
+Index the current checkout before code discovery. Known graph names are
+`SetadInfo-Portfolio` for the active checkout and
+`setadinfo-reconciled-20260809` for the release candidate.
+
+## Product Boundaries
+
+- The product is Persian and RTL-first.
+- Browser production code calls the same-origin FastAPI `/api` surface; Setad
+  and Rubika access stays server-side.
+- Official board codes are purchase `1`, tender `2`, and auction `3`.
+- Monitoring is baseline plus meaningful delta; unchanged scheduled checks do
+  not create user-facing notifications.
+- Backend role checks for `admin`, `operator`, and `viewer` are authoritative.
 - Never add real credentials, recipient IDs, private screenshots, database
-  dumps, commercial font files, or material from `.ops-private/`.
+  dumps, infrastructure secrets, or commercial font files.
 
 ## Verification
-
-Backend behavior or schema changes:
 
 ```bash
 PYTHONPATH=backend python -m unittest discover -s backend/tests -v
 DATABASE_URL=sqlite:///./tmp-agent-migration.db python -m alembic -c alembic.ini upgrade head
-```
-
-Frontend changes:
-
-```bash
 cd frontend-workbench
 corepack enable
 pnpm install --frozen-lockfile
 pnpm audit --audit-level=high
 pnpm lint
-pnpm exec playwright install chromium
 pnpm test
 pnpm build
 pnpm verify:demo
 ```
-
-Use focused tests while iterating, then run the complete relevant gate. For UI
-changes, seed the sanitized demo database and inspect desktop and mobile
-screenshots as described in `docs/demo-data.md`. Changes that affect routes,
-API adapters, or layout must also pass `pnpm verify:demo`.
-
-## Change Discipline
-
-- Trace callers and API consumers before changing shared schemas, filters, or
-  monitor semantics.
-- Add a regression test that fails for the reported behavior before or alongside
-  the fix.
-- Keep generated files, lockfiles, migrations, and documentation synchronized
-  with the source change that requires them.
-- Do not rewrite unrelated files to satisfy formatting or cleanup tools. Record
-  existing debt separately.
-- AI assistance does not replace maintainer review. Explain material AI use and
-  the verification performed in the pull request.

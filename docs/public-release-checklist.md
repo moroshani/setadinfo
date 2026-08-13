@@ -2,8 +2,8 @@
 
 Updated: 2026-08-09
 
-The public repository already exists. Use this checklist before every public
-push, Pages deployment, or tagged source release.
+The public repository already exists. Use this checklist before a public push,
+Pages deployment, or tagged source release from the reconciled candidate.
 
 ## Must Exclude
 
@@ -29,12 +29,12 @@ push, Pages deployment, or tagged source release.
 ## Pre-Push Checks
 
 - Run backend tests.
-- Run the fresh SQLite Alembic migration.
-- Run `frontend-workbench` audit, lint, tests, production build, and
-  `pnpm verify:demo`.
+- Run a fresh SQLite Alembic migration.
+- Run `frontend-workbench` audit, lint, tests, and production build.
+- Run `pnpm verify:demo` and confirm no `/api`,
+  Setad, or Rubika request leaves the browser demo.
 - Search for obvious secret names and production-only values.
 - Confirm ignored files stay ignored after copying into the public repo.
 - Review `README.md` as if a new contributor is installing the app from zero.
-- Confirm the Pages bundle contains only synthetic data and makes no `/api`,
-  Setad, or Rubika request.
-- Confirm CI, CodeQL, and Pages workflows pass on the exact published commit.
+- Review the release-candidate diff against public `main`; do not reset or
+  overwrite the active notification/redesign checkout.

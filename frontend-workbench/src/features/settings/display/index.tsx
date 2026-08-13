@@ -1,4 +1,3 @@
-import { ContentSection } from '../components/content-section'
 import { Link } from '@tanstack/react-router'
 import { Archive, Database, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { ContentSection } from '../components/content-section'
 
 export function SettingsDisplay() {
   return (
@@ -23,7 +23,8 @@ export function SettingsDisplay() {
               آگهی‌های ذخیره‌شده
             </CardTitle>
             <CardDescription>
-              فقط آگهی‌هایی که به یک پایش وصل شده‌اند نگهداری می‌شوند؛ داده‌های orphan در پاکسازی حذف می‌شوند.
+              فقط آگهی‌هایی که به یک پایش وصل شده‌اند نگهداری می‌شوند؛ داده‌های
+              orphan در پاکسازی حذف می‌شوند.
             </CardDescription>
           </CardHeader>
           <div className='px-6'>
@@ -39,7 +40,8 @@ export function SettingsDisplay() {
               تاریخچه اجرا
             </CardTitle>
             <CardDescription>
-              اجرای موفق، خطاها، تعداد دریافت‌شده و تعداد تغییرکرده در صفحه اجراها قابل بررسی است.
+              اجرای موفق، خطاها، تعداد دریافت‌شده و تعداد تغییرکرده در صفحه
+              اجراها قابل بررسی است.
             </CardDescription>
           </CardHeader>
           <div className='px-6'>
@@ -55,7 +57,8 @@ export function SettingsDisplay() {
               مخزن عمومی
             </CardTitle>
             <CardDescription>
-              فایل‌های عملیاتی خصوصی، توکن‌ها، دامپ‌ها و فونت‌های بدون مجوز بازنشر نباید وارد مخزن عمومی شوند.
+              فایل‌های عملیاتی خصوصی، توکن‌ها، دامپ‌ها و فونت‌های بدون مجوز
+              بازنشر نباید وارد مخزن عمومی شوند.
             </CardDescription>
           </CardHeader>
         </Card>

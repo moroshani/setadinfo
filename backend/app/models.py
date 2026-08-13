@@ -49,6 +49,8 @@ class MonitorTask(Base):
     notify_new_listings: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_listing_changes: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_offer_changes: Mapped[bool] = mapped_column(Boolean, default=True)
+    notification_frequency: Mapped[str] = mapped_column(String(40), default="immediate")
+    notification_event_types: Mapped[list] = mapped_column(JSON, default=list)
     rubika_chat_id: Mapped[str] = mapped_column(String(120), default="")
     owner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -56,7 +58,11 @@ class MonitorTask(Base):
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     baseline_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    baseline_captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    baseline_notification_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_successful_run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    consecutive_failure_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_failure_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     runs: Mapped[list["TaskRun"]] = relationship(back_populates="task", cascade="all, delete-orphan")
     recipients: Mapped[list["RubikaRecipient"]] = relationship(
@@ -191,9 +197,28 @@ class NotificationEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class NotificationCard(Base):
+    __tablename__ = "notification_cards"
+    __table_args__ = (
+        UniqueConstraint("event_id", name="uq_notification_cards_event_id"),
+        Index("ix_notification_cards_task_created", "task_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("notification_events.id", ondelete="CASCADE"), index=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey("monitor_tasks.id", ondelete="CASCADE"), index=True)
+    card_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    title: Mapped[str] = mapped_column(Text, default="")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class NotificationDelivery(Base):
     __tablename__ = "notification_deliveries"
     __table_args__ = (
+        UniqueConstraint("event_id", "channel", "chat_id", name="uq_notification_delivery_target"),
         Index("ix_notification_deliveries_event", "event_id"),
         Index("ix_notification_deliveries_recipient", "recipient_id"),
     )
@@ -208,3 +233,15 @@ class NotificationDelivery(Base):
     last_error: Mapped[str] = mapped_column(Text, default="")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class NotificationDeliveryAttempt(Base):
+    __tablename__ = "notification_delivery_attempts"
+    __table_args__ = (Index("ix_notification_delivery_attempts_delivery", "delivery_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    delivery_id: Mapped[int] = mapped_column(ForeignKey("notification_deliveries.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(40), default="pending")
+    error: Mapped[str] = mapped_column(Text, default="")
+    response_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -26,6 +26,7 @@ import {
   getRubikaRecipients,
   liveOffers,
   liveSearch,
+  previewNotification,
 } from '@/lib/setad-api'
 import { FALLBACK_BOARD_OPTIONS, boardLabel } from '@/lib/setad-boards'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -353,7 +354,7 @@ export function SetadSearchPage() {
     page: number
   } | null>(null)
   const [monitorName, setMonitorName] = useState('')
-  const [intervalMinutes, setIntervalMinutes] = useState(60)
+  const [intervalMinutes, setIntervalMinutes] = useState(5)
   const [includeOffers, setIncludeOffers] = useState(true)
   const [notifyRubika, setNotifyRubika] = useState(false)
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([])
@@ -365,6 +366,7 @@ export function SetadSearchPage() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const [offers, setOffers] = useState<Offer[]>([])
   const [offerError, setOfferError] = useState('')
+  const [previewMessage, setPreviewMessage] = useState('')
 
   const metaQuery = useQuery({
     queryKey: ['setad-meta-filters'],
@@ -452,6 +454,17 @@ export function SetadSearchPage() {
         notify_new_listings: true,
         notify_listing_changes: true,
         notify_offer_changes: true,
+        notification_frequency: 'immediate',
+        notification_event_types: [
+          'baseline_summary',
+          'listing_new',
+          'listing_changed',
+          'listing_removed',
+          'offer_new',
+          'offer_changed',
+          'run_failed',
+          'monitor_needs_attention',
+        ],
         rubika_chat_id: '',
         recipient_ids: notifyRubika ? selectedRecipientIds : [],
         filters: preparedFilters,
@@ -474,6 +487,26 @@ export function SetadSearchPage() {
       toast.error(message)
     },
   })
+  const previewMutation = useMutation({
+    mutationFn: () =>
+      previewNotification({
+        task_name:
+          monitorName.trim() ||
+          preparedFilters.keywords.join(' + ') ||
+          preparedFilters.keyword ||
+          'پایش جدید',
+        event_type: 'listing_new',
+        listing: results?.items[0] ?? {},
+      }),
+    onSuccess: (payload) => {
+      setPreviewMessage(payload.message)
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : 'پیش‌نمایش اعلان آماده نشد'
+      )
+    },
+  })
   const trackItemMutation = useMutation({
     mutationFn: (listing: Listing) =>
       createTask({
@@ -487,6 +520,17 @@ export function SetadSearchPage() {
         notify_new_listings: true,
         notify_listing_changes: true,
         notify_offer_changes: true,
+        notification_frequency: 'immediate',
+        notification_event_types: [
+          'baseline_summary',
+          'listing_new',
+          'listing_changed',
+          'listing_removed',
+          'offer_new',
+          'offer_changed',
+          'run_failed',
+          'monitor_needs_attention',
+        ],
         rubika_chat_id: '',
         recipient_ids: notifyRubika ? selectedRecipientIds : [],
         filters: {
@@ -1059,8 +1103,8 @@ export function SetadSearchPage() {
             <CardHeader>
               <CardTitle>ذخیره به عنوان پایش</CardTitle>
               <CardDescription>
-                بعد از ذخیره، scheduler همین فیلتر را با baseline و delta دنبال
-                می‌کند.
+                بعد از ذخیره، سیستم این فیلتر را هر چند دقیقه بررسی می‌کند و فقط
+                لیست اولیه و تغییرهای معنی‌دار را خبر می‌دهد.
               </CardDescription>
             </CardHeader>
             <CardContent className='space-y-4'>
@@ -1075,10 +1119,10 @@ export function SetadSearchPage() {
                 <Field label='فاصله بررسی'>
                   <Input
                     type='number'
-                    min={15}
+                    min={5}
                     value={intervalMinutes}
                     onChange={(event) =>
-                      setIntervalMinutes(Number(event.target.value) || 60)
+                      setIntervalMinutes(Number(event.target.value) || 5)
                     }
                   />
                 </Field>
@@ -1101,7 +1145,7 @@ export function SetadSearchPage() {
                   <div className='min-w-0'>
                     <Label>اعلان Rubika</Label>
                     <p className='mt-1 text-xs leading-5 text-muted-foreground'>
-                      baseline اولیه و بروزرسانی‌های بعدی برای مقصدهای
+                      لیست اولیه و سپس فقط تغییرهای معنی‌دار برای مقصدهای
                       انتخاب‌شده ارسال شوند.
                     </p>
                   </div>
@@ -1146,6 +1190,32 @@ export function SetadSearchPage() {
                       </p>
                     )}
                   </div>
+                ) : null}
+              </div>
+              <div className='rounded-md border p-3'>
+                <div className='flex flex-wrap items-start justify-between gap-3'>
+                  <div>
+                    <Label>پیش‌نمایش پیام</Label>
+                    <p className='mt-1 text-xs leading-5 text-muted-foreground'>
+                      همین قالب ساده در Rubika ارسال می‌شود؛ اجرای بدون تغییر
+                      پیام جدید ندارد.
+                    </p>
+                  </div>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    disabled={previewMutation.isPending}
+                    onClick={() => previewMutation.mutate()}
+                  >
+                    <Bell />
+                    نمایش پیام
+                  </Button>
+                </div>
+                {previewMessage ? (
+                  <pre className='mt-3 rounded-md bg-muted/40 p-3 text-xs leading-6 whitespace-pre-wrap'>
+                    {previewMessage}
+                  </pre>
                 ) : null}
               </div>
               <Button

@@ -5,6 +5,7 @@ import { LayoutProvider } from '@/context/layout-provider'
 import { SearchProvider } from '@/context/search-provider'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
+import { Main } from '@/components/layout/main'
 import { PublicDemoBanner } from '@/components/public-demo-banner'
 import { SkipToMain } from '@/components/skip-to-main'
 
@@ -35,7 +36,9 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
             )}
           >
             <PublicDemoBanner />
-            {children ?? <Outlet />}
+            <Main id='content' className='min-w-0'>
+              {children ?? <Outlet />}
+            </Main>
           </SidebarInset>
         </SidebarProvider>
       </LayoutProvider>

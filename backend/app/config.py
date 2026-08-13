@@ -23,10 +23,11 @@ class Settings(BaseSettings):
     setad_stale_cache_ttl_seconds: int = 86400
     setad_page_size: int = 50
     setad_max_pages_per_run: int = 20
-    setad_min_interval_minutes: int = 15
+    setad_min_interval_minutes: int = 5
 
     rubika_bot_token: str = ""
     rubika_default_chat_id: str = ""
+    notification_failure_repeat_hours: int = 6
 
     @property
     def cookie_secure(self) -> bool:

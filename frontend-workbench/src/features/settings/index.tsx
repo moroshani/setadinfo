@@ -1,5 +1,11 @@
 import { Outlet } from '@tanstack/react-router'
-import { Bell, Database, Palette, Shield, SlidersHorizontal } from 'lucide-react'
+import {
+  Bell,
+  Database,
+  Palette,
+  Shield,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -54,7 +60,8 @@ export function Settings() {
             تنظیمات
           </h1>
           <p className='text-muted-foreground'>
-            تنظیمات ورک‌بنچ، امنیت، ظاهر، اعلان‌ها و سیاست نگهداری داده را از اینجا مدیریت کنید.
+            تنظیمات ورک‌بنچ، امنیت، ظاهر، اعلان‌ها و سیاست نگهداری داده را از
+            اینجا مدیریت کنید.
           </p>
         </div>
         <Separator className='my-4 lg:my-6' />

@@ -7,6 +7,7 @@ import type {
   MetaFilters,
   MonitorTask,
   NotificationEvent,
+  NotificationEventType,
   Offer,
   PageResponse,
   RubikaRecipient,
@@ -23,6 +24,17 @@ export const isPublicDemo = import.meta.env.VITE_PUBLIC_DEMO === 'true'
 type DemoMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 const DEMO_NOW = '2026-08-08T09:30:00.000Z'
+
+const DEFAULT_NOTIFICATION_EVENT_TYPES: NotificationEventType[] = [
+  'baseline_summary',
+  'listing_new',
+  'listing_changed',
+  'listing_removed',
+  'offer_new',
+  'offer_changed',
+  'run_failed',
+  'monitor_needs_attention',
+]
 
 const createFilters = (overrides: Partial<TaskFilters> = {}): TaskFilters => ({
   monitorMode: 'filter',
@@ -264,6 +276,8 @@ const INITIAL_TASKS: MonitorTask[] = [
     notify_new_listings: true,
     notify_listing_changes: true,
     notify_offer_changes: false,
+    notification_frequency: 'immediate',
+    notification_event_types: [...DEFAULT_NOTIFICATION_EVENT_TYPES],
     rubika_chat_id: 'demo-operations',
     recipient_ids: ['demo-ops'],
     owner_id: 'demo-admin',
@@ -276,7 +290,10 @@ const INITIAL_TASKS: MonitorTask[] = [
     last_run_at: '2026-08-08T09:00:00.000Z',
     next_run_at: '2026-08-08T09:30:00.000Z',
     baseline_notified_at: '2026-07-21T08:10:00.000Z',
+    baseline_captured_at: '2026-07-21T08:10:00.000Z',
+    baseline_notification_sent_at: '2026-07-21T08:10:00.000Z',
     last_successful_run_id: 108,
+    consecutive_failure_count: 0,
   },
   {
     id: 'demo-auctions',
@@ -290,6 +307,8 @@ const INITIAL_TASKS: MonitorTask[] = [
     notify_new_listings: true,
     notify_listing_changes: true,
     notify_offer_changes: true,
+    notification_frequency: 'immediate',
+    notification_event_types: [...DEFAULT_NOTIFICATION_EVENT_TYPES],
     rubika_chat_id: 'demo-auctions',
     recipient_ids: ['demo-auction'],
     owner_id: 'demo-admin',
@@ -299,7 +318,10 @@ const INITIAL_TASKS: MonitorTask[] = [
     last_run_at: '2026-08-08T09:10:00.000Z',
     next_run_at: '2026-08-08T09:30:00.000Z',
     baseline_notified_at: '2026-07-25T10:20:00.000Z',
+    baseline_captured_at: '2026-07-25T10:20:00.000Z',
+    baseline_notification_sent_at: '2026-07-25T10:20:00.000Z',
     last_successful_run_id: 109,
+    consecutive_failure_count: 0,
   },
   {
     id: 'demo-security',
@@ -313,6 +335,8 @@ const INITIAL_TASKS: MonitorTask[] = [
     notify_new_listings: true,
     notify_listing_changes: true,
     notify_offer_changes: false,
+    notification_frequency: 'in_app_only',
+    notification_event_types: [...DEFAULT_NOTIFICATION_EVENT_TYPES],
     rubika_chat_id: '',
     recipient_ids: [],
     owner_id: 'demo-admin',
@@ -322,7 +346,10 @@ const INITIAL_TASKS: MonitorTask[] = [
     last_run_at: '2026-08-08T08:30:00.000Z',
     next_run_at: '2026-08-08T09:30:00.000Z',
     baseline_notified_at: '2026-08-02T09:08:00.000Z',
+    baseline_captured_at: '2026-08-02T09:08:00.000Z',
+    baseline_notification_sent_at: null,
     last_successful_run_id: 106,
+    consecutive_failure_count: 0,
   },
   {
     id: 'demo-laboratory',
@@ -336,6 +363,8 @@ const INITIAL_TASKS: MonitorTask[] = [
     notify_new_listings: true,
     notify_listing_changes: true,
     notify_offer_changes: false,
+    notification_frequency: 'immediate',
+    notification_event_types: [...DEFAULT_NOTIFICATION_EVENT_TYPES],
     rubika_chat_id: '',
     recipient_ids: [],
     owner_id: 'demo-admin',
@@ -345,7 +374,10 @@ const INITIAL_TASKS: MonitorTask[] = [
     last_run_at: null,
     next_run_at: null,
     baseline_notified_at: null,
+    baseline_captured_at: null,
+    baseline_notification_sent_at: null,
     last_successful_run_id: null,
+    consecutive_failure_count: 0,
   },
 ]
 
@@ -432,6 +464,12 @@ const INITIAL_RUNS: TaskRun[] = [
 const listingById = (id: number) =>
   INITIAL_LISTINGS.find((listing) => listing.id === id) as Listing
 
+const notificationCard = (title: string, reason: string, body: string) => ({
+  title,
+  reason,
+  body,
+})
+
 const INITIAL_NOTIFICATIONS: NotificationEvent[] = [
   {
     id: 501,
@@ -443,6 +481,11 @@ const INITIAL_NOTIFICATIONS: NotificationEvent[] = [
     severity: 'info',
     title: 'مهلت ارسال فراخوان مرکز داده تمدید شد',
     summary: 'مهلت ارسال پیشنهاد دو روز افزایش یافت.',
+    card: notificationCard(
+      'تمدید مهلت فراخوان مرکز داده',
+      'مهلت ارسال پیشنهاد تغییر کرده است.',
+      'مهلت قبلی: ۲۵ مرداد ۱۴۰۵\nمهلت جدید: ۲۷ مرداد ۱۴۰۵'
+    ),
     payload: {
       listing: listingById(1),
       changes: {
@@ -464,6 +507,11 @@ const INITIAL_NOTIFICATIONS: NotificationEvent[] = [
     severity: 'info',
     title: 'پیشنهاد جدید برای مزایده خودروها',
     summary: 'یک پیشنهاد تازه در آخرین اجرای پایش مشاهده شد.',
+    card: notificationCard(
+      'پیشنهاد تازه برای مزایده خودرو',
+      'یک پیشنهاد جدید ثبت شده است.',
+      'پیشنهاددهنده: شرکت نمایشی راه نو\nمبلغ: ۲۲٬۹۰۰٬۰۰۰٬۰۰۰ ریال'
+    ),
     payload: { listing: listingById(8), offer: INITIAL_OFFERS[8][0] },
     created_at: '2026-08-08T09:12:00.000Z',
   },
@@ -477,6 +525,11 @@ const INITIAL_NOTIFICATIONS: NotificationEvent[] = [
     severity: 'info',
     title: 'خرید تجهیزات پشتیبان‌گیری کشف شد',
     summary: 'این آگهی برای نخستین بار با فیلتر زیرساخت تطبیق داشت.',
+    card: notificationCard(
+      'آگهی تازه در پایش زیرساخت',
+      'این آگهی برای نخستین بار با فیلتر تطبیق داشت.',
+      'خرید تجهیزات پشتیبان‌گیری و ذخیره‌سازی'
+    ),
     payload: { listing: listingById(3) },
     created_at: '2026-08-08T09:01:00.000Z',
   },
@@ -490,6 +543,11 @@ const INITIAL_NOTIFICATIONS: NotificationEvent[] = [
     severity: 'info',
     title: 'فراخوان خدمات مرکز عملیات امنیت',
     summary: 'عبارت امنیت در عنوان و دسته‌بندی آگهی تطبیق پیدا کرد.',
+    card: notificationCard(
+      'فراخوان تازه امنیت اطلاعات',
+      'عنوان و دسته‌بندی با پایش امنیت تطبیق دارد.',
+      'خدمات مرکز عملیات امنیت و پایش رخدادها'
+    ),
     payload: { listing: listingById(10) },
     created_at: '2026-08-08T08:31:00.000Z',
   },
@@ -503,6 +561,11 @@ const INITIAL_NOTIFICATIONS: NotificationEvent[] = [
     severity: 'warning',
     title: 'مبلغ پیشنهاد مزایده ضایعات تغییر کرد',
     summary: 'مبلغ ثبت‌شده پیشنهاد برتر افزایش یافت.',
+    card: notificationCard(
+      'تغییر پیشنهاد مزایده ضایعات',
+      'مبلغ پیشنهاد برتر افزایش یافته است.',
+      'مبلغ قبلی: ۶٬۵۵۰٬۰۰۰٬۰۰۰ ریال\nمبلغ جدید: ۶٬۸۱۰٬۰۰۰٬۰۰۰ ریال'
+    ),
     payload: {
       listing: listingById(5),
       offer: INITIAL_OFFERS[5][0],
@@ -522,6 +585,11 @@ const INITIAL_NOTIFICATIONS: NotificationEvent[] = [
     severity: 'warning',
     title: 'قیمت پایه ماشین‌آلات بروزرسانی شد',
     summary: 'قیمت پایه رکورد عمومی تغییر کرده است.',
+    card: notificationCard(
+      'تغییر قیمت پایه ماشین‌آلات',
+      'قیمت پایه آگهی عمومی بروزرسانی شده است.',
+      'قیمت قبلی: ۱۲٬۳۰۰٬۰۰۰٬۰۰۰ ریال\nقیمت جدید: ۱۲٬۸۰۰٬۰۰۰٬۰۰۰ ریال'
+    ),
     payload: {
       listing: listingById(2),
       changes: {
@@ -771,7 +839,10 @@ export async function requestPublicDemo<T>(
       last_run_at: null,
       next_run_at: payload.enabled ? DEMO_NOW : null,
       baseline_notified_at: null,
+      baseline_captured_at: null,
+      baseline_notification_sent_at: null,
       last_successful_run_id: null,
+      consecutive_failure_count: 0,
     }
     tasks = [task, ...tasks]
     result = task
@@ -823,6 +894,19 @@ export async function requestPublicDemo<T>(
       ? notifications.filter((event) => event.task_id === taskId)
       : notifications
     result = { items: filtered.slice(0, limit) }
+  } else if (pathname === '/api/notifications/preview' && method === 'POST') {
+    const payload = body as {
+      task_name?: string
+      listing?: Partial<Listing>
+    }
+    result = {
+      message: [
+        `پایش: ${payload.task_name || 'پایش جدید'}`,
+        'رویداد: آگهی جدید',
+        `عنوان: ${payload.listing?.title || 'نمونه آگهی مطابق فیلتر'}`,
+        `سازمان: ${payload.listing?.organization || 'سازمان نمونه'}`,
+      ].join('\n'),
+    }
   } else if (pathname === '/api/listings' && method === 'GET') {
     const page = Number(url.searchParams.get('page') ?? 0)
     const pageSize = Number(url.searchParams.get('page_size') ?? 25)

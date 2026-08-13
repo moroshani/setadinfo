@@ -1,25 +1,17 @@
-import { useEffect, useRef } from 'react'
 import { useRouterState } from '@tanstack/react-router'
-import LoadingBar, { type LoadingBarRef } from 'react-top-loading-bar'
 
 export function NavigationProgress() {
-  const ref = useRef<LoadingBarRef>(null)
   const state = useRouterState()
+  const isLoading = state.status === 'pending'
 
-  useEffect(() => {
-    if (state.status === 'pending') {
-      ref.current?.continuousStart()
-    } else {
-      ref.current?.complete()
-    }
-  }, [state.status])
+  if (!isLoading) return null
 
   return (
-    <LoadingBar
-      color='var(--muted-foreground)'
-      ref={ref}
-      shadow={true}
-      height={2}
-    />
+    <div
+      aria-hidden='true'
+      className='fixed inset-x-0 top-0 z-100 h-0.5 overflow-hidden bg-transparent'
+    >
+      <div className='h-full w-1/3 animate-pulse rounded-e-full bg-muted-foreground' />
+    </div>
   )
 }

@@ -95,6 +95,8 @@ type MonitorTask = {
   notify_new_listings: boolean
   notify_listing_changes: boolean
   notify_offer_changes: boolean
+  notification_frequency: 'immediate' | 'hourly' | 'daily' | 'in_app_only'
+  notification_event_types: string[]
   rubika_chat_id: string
   recipient_ids: string[]
   owner_id: string | null
@@ -104,7 +106,10 @@ type MonitorTask = {
   last_run_at: string | null
   next_run_at: string | null
   baseline_notified_at: string | null
+  baseline_captured_at: string | null
+  baseline_notification_sent_at: string | null
   last_successful_run_id: number | null
+  consecutive_failure_count: number
 }
 ```
 
@@ -184,17 +189,21 @@ type NotificationEvent = {
   title: string
   summary: string
   payload: Record<string, unknown>
+  card: { title: string; reason: string; body: string } | null
   created_at: string
 }
 ```
 
 Known `event_type` values are:
 
-- `initial_listing`
-- `new_listing`
+- `baseline_summary`
+- `listing_new`
 - `listing_changed`
+- `listing_removed`
 - `offer_new`
 - `offer_changed`
+- `run_failed`
+- `monitor_needs_attention`
 
 ### RubikaRecipient
 
@@ -215,6 +224,7 @@ type RubikaRecipient = {
 | Method | Path | Auth | Request | Response |
 | --- | --- | --- | --- | --- |
 | `GET` | `/api/health` | public | none | `{ ok: true, service: "setadinfo" }` |
+| `GET` | `/api/system/status` | user | none | DB, Redis, Setad, Rubika, worker, and beat status |
 | `POST` | `/api/auth/login` | public | `{ username, password }` | `{ ok: true }` and sets session cookie |
 | `POST` | `/api/auth/logout` | user | `{}` | `{ ok: true }` and clears session cookie |
 | `GET` | `/api/auth/me` | user | none | `{ ok, id, username, role }` |
@@ -240,8 +250,12 @@ type RubikaRecipient = {
 | `PUT` | `/api/tasks/{task_id}` | task owner/admin | `TaskCreate` | `MonitorTask` |
 | `DELETE` | `/api/tasks/{task_id}` | task owner/admin | none | `{ ok: true }` |
 | `POST` | `/api/tasks/{task_id}/run` | task owner/admin | `{}` | `{ ok: true, queued: true }` |
+| `GET` | `/api/tasks/{task_id}/health` | task owner/admin | none | monitor health summary |
 | `GET` | `/api/runs` | user | `task_id?` | `{ items: TaskRun[] }` |
 | `GET` | `/api/notifications` | user | `task_id?, limit?` | `{ items: NotificationEvent[] }` |
+| `POST` | `/api/notifications/preview` | user | preview payload | `{ message }` |
+| `GET` | `/api/deliveries` | user | `task_id?, status?, limit?` | delivery audit rows |
+| `POST` | `/api/deliveries/{delivery_id}/retry` | admin | `{}` | retry result and updated delivery |
 | `GET` | `/api/listings` | user | `task_id?, q?, board_code?, sort_by?, sort_dir?, page?, page_size?` | `PageResponse<Listing>` |
 | `GET` | `/api/listings/{listing_id}` | user | none | `{ listing: Listing, offers: Offer[] }` |
 | `GET` | `/api/listings/{listing_id}/offers` | user | none | `{ items: Offer[] }` |
@@ -263,6 +277,8 @@ type TaskCreate = {
   notify_new_listings: boolean
   notify_listing_changes: boolean
   notify_offer_changes: boolean
+  notification_frequency: 'immediate' | 'hourly' | 'daily' | 'in_app_only'
+  notification_event_types: string[]
   rubika_chat_id: string
   recipient_ids: string[]
   filters: TaskFilters
@@ -311,4 +327,3 @@ For the frontend rebuild:
 - Do not change auth semantics without updating route guards and this document.
 - Do not call public Setad APIs directly from the browser.
 - Keep operator visibility filtering in the backend.
-

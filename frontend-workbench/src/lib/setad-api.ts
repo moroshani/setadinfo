@@ -1,4 +1,7 @@
+import type { components } from './openapi-types'
 import { isPublicDemo, requestPublicDemo } from './public-demo-api'
+
+type ApiSchemas = components['schemas']
 
 export type DashboardStats = {
   total_tasks: number
@@ -20,6 +23,8 @@ export type MonitorTask = {
   notify_new_listings: boolean
   notify_listing_changes: boolean
   notify_offer_changes: boolean
+  notification_frequency: NotificationFrequency
+  notification_event_types: NotificationEventType[]
   rubika_chat_id: string
   recipient_ids: string[]
   owner_id?: string | null
@@ -29,8 +34,18 @@ export type MonitorTask = {
   last_run_at: string | null
   next_run_at: string | null
   baseline_notified_at: string | null
+  baseline_captured_at: string | null
+  baseline_notification_sent_at: string | null
   last_successful_run_id: number | null
+  consecutive_failure_count: number
 }
+
+export type NotificationFrequency =
+  ApiSchemas['TaskCreate']['notification_frequency']
+
+export type NotificationEventType = NonNullable<
+  ApiSchemas['TaskCreate']['notification_event_types']
+>[number]
 
 export type TaskFilters = {
   monitorMode: 'filter' | 'item'
@@ -145,7 +160,58 @@ export type NotificationEvent = {
   title: string
   summary: string
   payload: Record<string, unknown>
+  card: {
+    title: string
+    reason: string
+    body: string
+  } | null
   created_at: string
+}
+
+export type NotificationDelivery = {
+  id: number
+  event_id: number
+  task_id: string | null
+  recipient_id: string | null
+  channel: string
+  chat_id: string
+  status: string
+  attempt_count: number
+  last_error: string
+  sent_at: string | null
+  created_at: string
+  card: {
+    title: string
+    reason: string
+    body: string
+  } | null
+  attempts: {
+    id: number
+    status: string
+    error: string
+    attempted_at: string
+  }[]
+}
+
+export type TaskHealth = {
+  task_id: string
+  enabled: boolean
+  needs_attention: boolean
+  last_run_status: string
+  last_run_message: string
+  next_run_at: string | null
+  baseline_captured_at: string | null
+  consecutive_failure_count: number
+  pending_delivery_count: number
+}
+
+export type SystemStatus = {
+  db: { ok: boolean }
+  redis: { ok: boolean }
+  setad: { base_url: string; cache_ttl_seconds: number }
+  rubika: { configured: boolean; default_chat_configured: boolean }
+  worker: { expected: string }
+  beat: { expected: string; schedule_seconds: number }
 }
 
 export type Listing = {
@@ -303,10 +369,18 @@ export function getRuns() {
   return request<{ items: TaskRun[] }>('/api/runs')
 }
 
+export function getSystemStatus() {
+  return request<SystemStatus>('/api/system/status')
+}
+
 export function getTaskRuns(taskId: string) {
   return request<{ items: TaskRun[] }>(
     `/api/runs?task_id=${encodeURIComponent(taskId)}`
   )
+}
+
+export function getTaskHealth(taskId: string) {
+  return request<TaskHealth>(`/api/tasks/${taskId}/health`)
 }
 
 export function getNotifications(limit = 80, taskId?: string) {
@@ -315,6 +389,39 @@ export function getNotifications(limit = 80, taskId?: string) {
   return request<{ items: NotificationEvent[] }>(
     `/api/notifications?${params.toString()}`
   )
+}
+
+export function previewNotification(
+  payload: Partial<ApiSchemas['NotificationPreviewRequest']>
+) {
+  return send<{ message: string }>(
+    '/api/notifications/preview',
+    'POST',
+    payload
+  )
+}
+
+export function getDeliveries(
+  options: {
+    taskId?: string
+    status?: string
+    limit?: number
+  } = {}
+) {
+  const params = new URLSearchParams({ limit: String(options.limit ?? 100) })
+  if (options.taskId) params.set('task_id', options.taskId)
+  if (options.status) params.set('status', options.status)
+  return request<{ items: NotificationDelivery[] }>(
+    `/api/deliveries?${params.toString()}`
+  )
+}
+
+export function retryDelivery(deliveryId: number) {
+  return send<{
+    ok: boolean
+    delivery: NotificationDelivery
+    errors: string[]
+  }>(`/api/deliveries/${deliveryId}/retry`, 'POST', {})
 }
 
 export type ListingQuery = {
@@ -384,12 +491,7 @@ export function getRubikaRecipients() {
   )
 }
 
-export type RubikaRecipientPayload = {
-  name: string
-  recipient_type: RubikaRecipientType
-  chat_id: string
-  enabled: boolean
-}
+export type RubikaRecipientPayload = ApiSchemas['RubikaRecipientCreate']
 
 export function createRubikaRecipient(payload: RubikaRecipientPayload) {
   return send<RubikaRecipient>(
@@ -460,20 +562,13 @@ export function liveOffers(
   })
 }
 
-export type CreateTaskPayload = {
-  name: string
-  description: string
-  enabled: boolean
-  interval_minutes: number
-  include_offers: boolean
-  notify_rubika: boolean
-  notify_initial: boolean
-  notify_new_listings: boolean
-  notify_listing_changes: boolean
-  notify_offer_changes: boolean
-  rubika_chat_id: string
-  recipient_ids: string[]
+export type CreateTaskPayload = Omit<
+  ApiSchemas['TaskCreate'],
+  'filters' | 'notification_event_types' | 'recipient_ids'
+> & {
   filters: TaskFilters
+  notification_event_types: NotificationEventType[]
+  recipient_ids: string[]
 }
 
 export function createTask(payload: CreateTaskPayload) {
